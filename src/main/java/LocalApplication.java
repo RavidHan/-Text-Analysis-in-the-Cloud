@@ -2,6 +2,9 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
+
+import java.io.UnsupportedEncodingException;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 
@@ -10,7 +13,7 @@ public class LocalApplication {
 
 
         String name = "AnotherName";
-        String amiId = "ami-0eb324d928acca58a";
+        String amiId = "ami-0b36cd6786bcfe120";
         Ec2Client ec2 = GetEc2();
         String instanceId = createEC2Instance(ec2,name, amiId) ;
         System.out.println("The Amazon EC2 Instance ID is "+instanceId);
@@ -24,6 +27,20 @@ public class LocalApplication {
         return Ec2Client.builder()
                 .region(region)
                 .build();
+    }
+
+    private static String getECSuserData(String s) {
+        String userData = "";
+        userData = userData + "#!/bin/bash" + "\n";
+        userData = userData + "echo " + s + " ";
+        userData = userData + ">> /home/ec2-user/helloworld.txt";
+        String base64UserData = null;
+        try {
+            base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return base64UserData;
     }
 
     public static void describeEC2Instances( Ec2Client ec2){
@@ -64,9 +81,11 @@ public class LocalApplication {
     public static String createEC2Instance(Ec2Client ec2, String name, String amiId ) {
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
-                .instanceType(InstanceType.T1_MICRO)
+                .instanceType(InstanceType.T2_MICRO)
+                .userData(getECSuserData("hello world"))
                 .maxCount(1)
                 .minCount(1)
+                .securityGroups("launch-wizard-2")
                 .build();
 
         RunInstancesResponse response = ec2.runInstances(runRequest);
