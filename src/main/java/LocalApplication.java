@@ -20,6 +20,7 @@ public class LocalApplication {
         TimeUnit.SECONDS.sleep(40);
         describeEC2Instances(ec2);
         stopEC2Instance(ec2, instanceId);
+        ec2.close();
     }
 
     public static Ec2Client GetEc2(){
