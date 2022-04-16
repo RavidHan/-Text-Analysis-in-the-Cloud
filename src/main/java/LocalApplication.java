@@ -2,7 +2,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
-
 import java.io.UnsupportedEncodingException;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;

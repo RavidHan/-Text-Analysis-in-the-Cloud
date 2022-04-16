@@ -5,6 +5,10 @@ import java.util.List;
 
 public class SQSClass {
 
+    public static String managerToAppQueueName = "managerToAppQueue";
+    public static String appToManagerQueueName = "appToManagerQueue";
+    public static String managerToWorkerQueueName = "managerToWorkerQueue";
+    public static String workerToManagerQueueName = "workerToManagerQueue";
 
     public static void main(String[] args) {
         String queueName = "queue" + System.currentTimeMillis();
@@ -74,6 +78,16 @@ public class SQSClass {
         // snippet-end:[sqs.java2.sqs_example.list_queues]
     }
 
+    public static String getQueueByName(SqsClient sqsClient, String queueName) {
+        ListQueuesRequest filterListRequest = ListQueuesRequest.builder()
+                .queueNamePrefix(queueName).build();
+        ListQueuesResponse listQueuesFilteredResponse = sqsClient.listQueues(filterListRequest);
+        if (listQueuesFilteredResponse.hasQueueUrls()) {
+            return listQueuesFilteredResponse.queueUrls().get(0);
+        } else {
+            return null;
+        }
+    }
     public static void listQueuesFilter(SqsClient sqsClient, String queueUrl ) {
         // List queues with filters
         String namePrefix = "queue";
@@ -131,13 +145,12 @@ public class SQSClass {
             // snippet-start:[sqs.java2.sqs_example.retrieve_messages]
             ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
                     .queueUrl(queueUrl)
-                    .maxNumberOfMessages(5)
+                    .maxNumberOfMessages(1)
                     .build();
             List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
             return messages;
         } catch (SqsException e) {
             System.err.println(e.awsErrorDetails().errorMessage());
-            System.exit(1);
         }
         return null;
         // snippet-end:[sqs.java2.sqs_example.retrieve_messages]
