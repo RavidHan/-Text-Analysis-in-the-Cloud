@@ -8,7 +8,7 @@ public class AwsProtocol implements Protocol {
     private boolean shouldTerminate;
 
     @Override
-    public Request process(Request req) {
+    public Request process(Request req) throws RequestUnkownException {
         if (req instanceof AppToManagerRequest){
             if (((AppToManagerRequest) req).isTermination()){
                 return null;
@@ -27,7 +27,7 @@ public class AwsProtocol implements Protocol {
             return null;
         }
 
-        return null;
+        throw new RequestUnkownException();
     }
 
     private Request processWorkerRequest() {

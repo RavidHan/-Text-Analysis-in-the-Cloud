@@ -120,6 +120,15 @@ public class SQSClass {
         }
     }
 
+    public static void sendMessageFromString(SqsClient sqsClient, String queueUrl, String messageString) {
+
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .messageBody(messageString).build();
+            sqsClient.sendMessage(sendMessageRequest);
+
+    }
+
     public static void sendBatchMessages(SqsClient sqsClient, String queueUrl) {
 
         System.out.println("\nSend multiple messages");
