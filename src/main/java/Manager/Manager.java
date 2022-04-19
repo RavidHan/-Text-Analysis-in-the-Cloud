@@ -1,11 +1,15 @@
 package Manager;
+
 import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
-
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Manager {
 
@@ -15,7 +19,7 @@ public class Manager {
     private static String workerToManagerQueueUrl;
     private static SqsClient sqsClient;
     private static int messagesPerWorker;
-    private static List<RequestHandler> requests;
+    private static ExecutorService executorService;
 
     public static void main(String[] args) {
 
@@ -28,9 +32,11 @@ public class Manager {
 //        init(Integer.parseInt(args[0]));
         init(2);
 
-        System.out.println("Starting Manager.Manager listener loop!");
+        System.out.println("Starting manager applications listener loop!");
         listen();
 
+        System.out.println("Closing Manager.Manager!");
+        cleanExit();
 //        SendMessageRequest messageRequest = SendMessageRequest.builder()
 //                .queueUrl(url)
 //                .messageBody("Timeout Testing")
@@ -38,6 +44,9 @@ public class Manager {
 //                .build();
 //        String msgID = sqsClient.sendMessage(messageRequest).messageId();
 //        System.out.println();
+    }
+
+    private static void cleanExit() {
     }
 
     private static void init(int n) {
@@ -50,7 +59,7 @@ public class Manager {
         managerToAppQueueUrl = getQueueUrl(SQSClass.managerToAppQueueName);
         managerToWorkerQueueUrl = getQueueUrl(SQSClass.managerToWorkerQueueName);
         workerToManagerQueueUrl = getQueueUrl(SQSClass.workerToManagerQueueName );
-        requests = new LinkedList<RequestHandler>();
+        executorService = Executors.newFixedThreadPool(n);
     }
 
     private static String getQueueUrl(String queueName) {
@@ -63,28 +72,31 @@ public class Manager {
     }
 
     private static void listen(){
-        while (true) {
-            createWorkers();
-            List<Message> appMessages = SQSClass.receiveMessages(sqsClient, appToManagerQueueUrl);
-            if (appMessages == null) {
-                System.out.println("Error is receiving message from app");
-                continue;
+
+            while (true) {
+                createWorkers();
+                List<Message> appMessages = SQSClass.receiveMessages(sqsClient, appToManagerQueueUrl);
+                if (appMessages == null) {
+                    System.out.println("Error is receiving message from app");
+                    continue;
+                }
+                if (appMessages.isEmpty()) {
+                    continue;
+                }
+                if (!handleAppRequest(appMessages.get(0))) {
+                    return;
+                }
             }
-            if (appMessages.isEmpty()) {
-                continue;
-            }
-            if (!handleAppRequest(appMessages.get(0))) {
-                // Nice finish
-            }
-        }
     }
 
     private static boolean handleAppRequest(Message appRequest){
         System.out.println("Printing the application request");
-        if (appRequest.body().equals(SQSClass.terminateMessage)) {
-            return false;
-        }
-        RequestHandler requestHandler = new RequestHandler(appRequest.messageId(), appRequest.body());
+//        if (appRequest.body().equals(SQSClass.terminateMessage)) {
+//            return false;
+//        }
+//        RequestHandler requestHandler = new RequestHandler(appRequest.messageId(), appRequest.body());
+//        executorService.execute(requestHandler);
+//        requestHandler.sendMessagesToWorkers(managerToWorkerQueueUrl);
         return true;
     }
 
