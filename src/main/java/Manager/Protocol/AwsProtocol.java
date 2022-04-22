@@ -1,42 +1,46 @@
 package Manager.Protocol;
 
-import javafx.util.Pair;
-import software.amazon.awssdk.services.sqs.model.Message;
+import Manager.Connection.ConnectionHandler;
 
-public class AwsProtocol implements Protocol {
+public class AwsProtocol {
 
-    private boolean shouldTerminate;
+    private boolean shouldTerminate = false;
+    private ConnectionHandler workersConnection;
+    private ConnectionHandler appConnection;
 
-    @Override
-    public Request process(Request req) throws RequestUnkownException {
+    public AwsProtocol(ConnectionHandler appConnection, ConnectionHandler workersConnection){
+        this.appConnection = appConnection;
+        this.workersConnection = workersConnection;
+    }
+
+    public Runnable process(Request req) throws RequestUnknownException {
         if (req instanceof AppToManagerRequest){
             if (((AppToManagerRequest) req).isTermination()){
+                shouldTerminate = true;
                 return null;
             }
-            return this.processApplicationRequest(req);
+            return this.processApplicationRequest((AppToManagerRequest) req);
         }
         if (req instanceof ManagerToAppRequest){
             // TODO
             return null;
         }
         if (req instanceof WorkerToManagerRequest){
-            return this.processWorkerRequest();
-        }
-        if (req instanceof  ManagerToWorkerRequest){
-            // TODO
-            return null;
+            return this.processWorkerRequest((WorkerToManagerRequest) req);
         }
 
-        throw new RequestUnkownException();
+        throw new RequestUnknownException();
     }
 
-    private Request processWorkerRequest() {
+    private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         // TODO
         return null;
     }
 
-    private Request processApplicationRequest(Request req) {
+    private Runnable processApplicationRequest(AppToManagerRequest req) {
         // TODO
+
+
         return null;
     }
 

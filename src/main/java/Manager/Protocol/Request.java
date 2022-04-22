@@ -1,6 +1,7 @@
 package Manager.Protocol;
 
-import sun.plugin2.message.Message;
+
+import software.amazon.awssdk.services.sqs.model.Message;
 
 public abstract class Request<T> {
     protected String id;

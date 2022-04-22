@@ -1,13 +1,11 @@
-package Manager;
+package Manager.Main;
 
 import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
-import java.util.HashMap;
+
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,14 +26,14 @@ public class Manager {
             return;
         }*/
 
-        System.out.println("Initializing Manager.Manager!");
+        System.out.println("Initializing Manager.Main.Manager!");
 //        init(Integer.parseInt(args[0]));
         init(2);
 
         System.out.println("Starting manager applications listener loop!");
         listen();
 
-        System.out.println("Closing Manager.Manager!");
+        System.out.println("Closing Manager.Main.Manager!");
         cleanExit();
 //        SendMessageRequest messageRequest = SendMessageRequest.builder()
 //                .queueUrl(url)

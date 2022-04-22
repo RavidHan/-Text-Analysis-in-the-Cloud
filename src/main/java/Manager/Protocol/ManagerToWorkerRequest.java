@@ -1,7 +1,7 @@
 package Manager.Protocol;
 
 import javafx.util.Pair;
-import sun.plugin2.message.Message;
+import software.amazon.awssdk.services.sqs.model.Message;
 
 public class ManagerToWorkerRequest extends Request<Pair<String, String>> {
     private String appMessageId;

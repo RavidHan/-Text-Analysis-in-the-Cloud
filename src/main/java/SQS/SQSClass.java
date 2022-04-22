@@ -207,5 +207,22 @@ public class SQSClass {
             System.exit(1);
         }
     }
+
+    public static List<Message> receiveOneMessage(SqsClient sqsClient, String queueUrl) {
+        System.out.println("\nReceive messages");
+
+        try {
+            // snippet-start:[sqs.java2.sqs_example.retrieve_messages]
+            ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .maxNumberOfMessages(1)
+                    .build();
+            List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
+            return messages;
+        } catch (SqsException e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+        }
+        return null;
+    }
     // snippet-end:[sqs.java2.sqs_example.main]
 }
