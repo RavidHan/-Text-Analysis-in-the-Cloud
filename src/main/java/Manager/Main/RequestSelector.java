@@ -8,16 +8,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class RequestSelector {
     private LinkedBlockingQueue<Request> allRequestsQueue;
 
-    private static class RequestSelectorInstance{
-        private static RequestSelector instance = new RequestSelector();
-    }
-
-    private RequestSelector(){
-        this.allRequestsQueue = new LinkedBlockingQueue<Request>();
-    }
-
-    public static RequestSelector getInstance(){
-        return RequestSelectorInstance.instance;
+    public RequestSelector(){
+        this.allRequestsQueue = new LinkedBlockingQueue<>();
     }
 
     public Request getRequest(){

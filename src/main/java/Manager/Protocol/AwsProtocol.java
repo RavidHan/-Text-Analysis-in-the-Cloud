@@ -2,7 +2,7 @@ package Manager.Protocol;
 
 import Manager.Connection.ConnectionHandler;
 
-public class AwsProtocol {
+public class AwsProtocol extends Protocol<Request>{
 
     private boolean shouldTerminate = false;
     private ConnectionHandler workersConnection;
@@ -13,6 +13,7 @@ public class AwsProtocol {
         this.workersConnection = workersConnection;
     }
 
+    @Override
     public Runnable process(Request req) throws RequestUnknownException {
         if (req instanceof AppToManagerRequest){
             if (((AppToManagerRequest) req).isTermination()){
