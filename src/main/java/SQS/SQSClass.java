@@ -224,5 +224,40 @@ public class SQSClass {
         }
         return null;
     }
+
+    // snippet-start:[sqs.java2.sqs_example.delete_queue]
+    public static void deleteSQSQueue(SqsClient sqsClient, String queueName) {
+
+        try {
+
+            GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
+                    .queueName(queueName)
+                    .build();
+
+            String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
+
+            DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder()
+                    .queueUrl(queueUrl)
+                    .build();
+
+            sqsClient.deleteQueue(deleteQueueRequest);
+
+        } catch (SqsException e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+    }
+    // snippet-end:[sqs.java2.sqs_example.delete_queue]
+
+    public static void deleteQueue(SqsClient sqsClient, String queueUrl){
+        try {
+            DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder()
+                    .queueUrl(queueUrl)
+                    .build();
+            DeleteQueueResponse deleteQueueResponse = sqsClient.deleteQueue(deleteQueueRequest);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     // snippet-end:[sqs.java2.sqs_example.main]
 }

@@ -4,23 +4,35 @@ import Manager.Protocol.AppToManagerRequest;
 import Manager.Protocol.ManagerToAppRequest;
 import Manager.Protocol.Request;
 import Manager.Protocol.RequestUnknownException;
-import javafx.util.Pair;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URL;
 
-public class ApplicationEncoderDecoder extends EncoderDecoder<S3Location, List<Pair<String, String>>> {
+public class ApplicationEncoderDecoder extends EncoderDecoder<String, URL> {
 
     @Override
-    public String encode(Request<S3Location> request) throws RequestUnknownException {
+    public String encode(Request<String> request) throws RequestUnknownException {
         if (!(request instanceof  ManagerToAppRequest)){
             throw new RequestUnknownException();
         }
-        return null;
+        return request.getData();
     }
 
     @Override
-    public AppToManagerRequest decode(Message message) {
-        return null;
+    public Request<URL> decode(Message message) {
+        AppToManagerRequest appToManagerRequest = new AppToManagerRequest();
+        appToManagerRequest.setId(message.messageId());
+        try {
+            if (message.body().equals("terminate")){
+                appToManagerRequest.setTerminationMessage(true);
+            } else {
+                appToManagerRequest.setData(new URL(message.body()));
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return appToManagerRequest;
     }
 }

@@ -8,4 +8,5 @@ public abstract class ConnectionHandler implements Runnable {
     public abstract void listener();
     public abstract void sendMessage(Request request) throws RequestUnknownException;
 
+    public abstract void terminate();
 }

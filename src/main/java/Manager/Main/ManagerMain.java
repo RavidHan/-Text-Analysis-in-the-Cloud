@@ -42,14 +42,33 @@ public class ManagerMain {
                 sqsClient);
         Manager manager = new Manager(
                 requestSelector,
-                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler),
+                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, messagesPerWorker),
                 messagesPerWorker);
 
         System.out.println("Starting manager applications listener loop!");
 
-        appSQSConnectionHandler.run();
-        workerSQSConnectionHandler.run();
-        manager.run();
+        Thread appConnectionThread = new Thread(appSQSConnectionHandler);
+        Thread workerConnectionThread = new Thread(workerSQSConnectionHandler);
+        Thread managerThread = new Thread(manager);
+        appConnectionThread.start();
+        workerConnectionThread.start();
+        managerThread.start();
+
+        try {
+            managerThread.join();
+
+            appConnectionThread.join();
+            workerConnectionThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            SQSClass.deleteSQSQueue(sqsClient, getAppMessagesName);
+            SQSClass.deleteSQSQueue(sqsClient, sendAppMessagesSQSName);
+            SQSClass.deleteSQSQueue(sqsClient, getWorkerMessagesName);
+            SQSClass.deleteSQSQueue(sqsClient, sendWorkerMessagesSQSName);
+
+        }
+
 
         System.out.println("Manager closed!");
 

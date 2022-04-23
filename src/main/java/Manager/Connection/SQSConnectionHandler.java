@@ -8,6 +8,7 @@ import SQS.SQSClass;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 
+import java.net.URL;
 import java.util.List;
 
 public class SQSConnectionHandler extends ConnectionHandler {
@@ -17,6 +18,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
     private String getMessageUrl;
     private SqsClient sqsClient;
     private RequestSelector requestSelector;
+    private boolean active;
 
     public SQSConnectionHandler(ApplicationEncoderDecoder encoderDecoder, RequestSelector requestSelector, String sendMessageName, String getMessageName, SqsClient sqsClient) {
         this.encoderDecoder = encoderDecoder;
@@ -24,6 +26,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
         this.getMessageUrl = this.getQueueUrl(getMessageName);
         this.sqsClient = sqsClient;
         this.requestSelector = requestSelector;
+        this.active = true;
     }
 
     private String getQueueUrl(String queueName) {
@@ -47,7 +50,6 @@ public class SQSConnectionHandler extends ConnectionHandler {
 
     @Override
     public void listener() {
-
             while (true) {
                 List<Message> appMessages = SQSClass.receiveOneMessage(this.sqsClient, this.getMessageUrl);
                 if (appMessages == null){
@@ -57,18 +59,21 @@ public class SQSConnectionHandler extends ConnectionHandler {
                 if (appMessages.isEmpty()){
                     continue;
                 }
-                Request<List<javafx.util.Pair<String, String>>> req = this.encoderDecoder.decode(appMessages.get(0));
+                Request<URL> req = this.encoderDecoder.decode(appMessages.get(0));
                 if (req != null) {
                     this.requestSelector.putMessage(req);
                     SQSClass.deleteMessages(this.sqsClient, this.getMessageUrl, appMessages);
                 }
             }
+    }
 
+    @Override
+    public void terminate(){
+        this.active = false;
     }
 
     @Override
     public void run() {
         this.listener();
-        // close both sqs
     }
 }
