@@ -1,7 +1,9 @@
 package Manager.Protocol;
 
 import Manager.Connection.ConnectionHandler;
+import Manager.Job.JobExecutor;
 import javafx.util.Pair;
+import software.amazon.awssdk.services.ec2.Ec2Client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,12 +20,12 @@ public class AwsProtocol extends Protocol<Request>{
     private boolean shouldTerminate = false;
     private ConnectionHandler workersConnection;
     private ConnectionHandler appConnection;
-    private final int messagesPerWorker;
+    private JobExecutor jobExecutor;
 
-    public AwsProtocol(ConnectionHandler appConnection, ConnectionHandler workersConnection, int messagesPerWorker){
-        this.messagesPerWorker = messagesPerWorker;
+    public AwsProtocol(ConnectionHandler appConnection, ConnectionHandler workersConnection, JobExecutor jobExecutor){
         this.appConnection = appConnection;
         this.workersConnection = workersConnection;
+        this.jobExecutor = jobExecutor;
     }
 
     @Override
@@ -73,7 +75,7 @@ public class AwsProtocol extends Protocol<Request>{
                 }
                 counter.getAndIncrement();
                 in.close();
-                createWorkers();
+                jobExecutor.createWorkers();
             } catch (MalformedURLException e) {
                 System.err.println("Malformed URL: " + e.getMessage());
             } catch (IOException | RequestUnknownException e) {
@@ -86,8 +88,7 @@ public class AwsProtocol extends Protocol<Request>{
         return (this.shouldTerminate && counter.get() == 0);
     }
 
-
     private void createWorkers() {
-
+        String instanceId = jobExecutor.createJobExecutor();
     }
 }

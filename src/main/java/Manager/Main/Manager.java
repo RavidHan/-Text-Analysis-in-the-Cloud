@@ -21,8 +21,8 @@ public class Manager implements Runnable{
     private RequestSelector requestSelector;
     private final Supplier<Protocol> protocolFactory;
 
-    public Manager(RequestSelector requestSelector, Supplier<Protocol> protocolFactory, int messagesPerWorker){
-        this.executorService =  Executors.newFixedThreadPool(messagesPerWorker);
+    public Manager(RequestSelector requestSelector, Supplier<Protocol> protocolFactory, int threadAmount){
+        this.executorService =  Executors.newFixedThreadPool(threadAmount);
         this.requestSelector = requestSelector;
         this.protocolFactory = protocolFactory;
     }

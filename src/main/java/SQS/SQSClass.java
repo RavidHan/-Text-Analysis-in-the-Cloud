@@ -3,6 +3,8 @@ package SQS;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class SQSClass {
@@ -258,6 +260,27 @@ public class SQSClass {
         } catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    public static int getNumberOfMessagesInQueue(SqsClient sqsClient, String queueUrl){
+        List<QueueAttributeName> atts = new ArrayList();
+        atts.add(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES);
+        atts.add(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE);
+        atts.add(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_DELAYED);
+
+        GetQueueAttributesRequest attributesRequest= GetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributeNames(atts)
+                .build();
+
+        GetQueueAttributesResponse response = sqsClient.getQueueAttributes(attributesRequest);
+
+        int requestsNum = 0;
+        for (String attr : response.attributes().values()){
+             requestsNum+=Integer.parseInt(attr);
+        }
+
+        return requestsNum;
     }
     // snippet-end:[sqs.java2.sqs_example.main]
 }

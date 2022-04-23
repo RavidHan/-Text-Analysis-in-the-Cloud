@@ -96,7 +96,7 @@ public class WorkerCreator {
     }
 
     public static String getCredentials() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\diaml\\.aws\\credentials"));
+        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\97254\\.aws\\credentials"));
         try {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();

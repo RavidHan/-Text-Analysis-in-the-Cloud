@@ -2,6 +2,7 @@ package Manager.Main;
 
 import Manager.Connection.ApplicationEncoderDecoder;
 import Manager.Connection.SQSConnectionHandler;
+import Manager.Job.WorkerExecutor;
 import Manager.Protocol.AwsProtocol;
 import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
@@ -40,10 +41,12 @@ public class ManagerMain {
                 sendWorkerMessagesSQSName,
                 getWorkerMessagesName,
                 sqsClient);
+        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker);
         Manager manager = new Manager(
                 requestSelector,
-                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, messagesPerWorker),
-                messagesPerWorker);
+                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor),
+                10);
+
 
         System.out.println("Starting manager applications listener loop!");
 
@@ -66,7 +69,7 @@ public class ManagerMain {
             SQSClass.deleteSQSQueue(sqsClient, sendAppMessagesSQSName);
             SQSClass.deleteSQSQueue(sqsClient, getWorkerMessagesName);
             SQSClass.deleteSQSQueue(sqsClient, sendWorkerMessagesSQSName);
-
+            workerExecutor.deleteJobExecutors();
         }
 
 
