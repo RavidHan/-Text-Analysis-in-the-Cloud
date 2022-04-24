@@ -30,11 +30,11 @@ public class AwsProtocol extends Protocol<Request>{
     private JobExecutor jobExecutor;
     private DataStorageInterface dataStorage;
 
-    public AwsProtocol(ConnectionHandler appConnection, ConnectionHandler workersConnection, JobExecutor jobExecutor){
+    public AwsProtocol(ConnectionHandler appConnection, ConnectionHandler workersConnection, JobExecutor jobExecutor, DataStorageInterface dataStorage){
         this.appConnection = appConnection;
         this.workersConnection = workersConnection;
         this.jobExecutor = jobExecutor;
-        this.dataStorage = new S3Storage();
+        this.dataStorage = dataStorage;
     }
 
     @Override
@@ -56,9 +56,19 @@ public class AwsProtocol extends Protocol<Request>{
     }
 
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
-        // TODO
-
-        return null;
+        return () -> {
+            String appMessageId = dataStorage.getLibOfFileFromUrl(req.getData());
+            if (this.dataStorage.getFilesAmountInLib(appMessageId) == appMessagesAmountMap.get(appMessageId)){
+                ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
+                managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
+                try {
+                    this.appConnection.sendMessage(managerToAppRequest);
+                } catch (RequestUnknownException e) {
+                    e.printStackTrace();
+                }
+                appMessagesAmountMap.remove(appMessageId);
+            }
+        };
     }
 
     private Runnable processApplicationRequest(AppToManagerRequest req) {
@@ -85,7 +95,6 @@ public class AwsProtocol extends Protocol<Request>{
                                         .add("inputLink", managerToWorkerRequest.getData().getValue()));
                     }
                 }
-                this.dataStorage.createLib(req.getId());
                 this.dataStorage.createLibInfoFile(req.getId(), s3LibData.build());
                 appMessagesAmountMap.put(req.getId(), managerToWorkerRequests.size());
                 in.close();

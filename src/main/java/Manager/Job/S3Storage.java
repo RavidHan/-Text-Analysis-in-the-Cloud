@@ -18,9 +18,8 @@ public class S3Storage implements DataStorageInterface {
     private S3Client s3;
     private static final String id_file_name= "ID-INFO.json";
 
-    @Override
-    public void createLib(String libName) {
-        
+    public S3Storage(String bucketName) {
+        this.bucketName = bucketName;
     }
 
     @Override
@@ -57,7 +56,13 @@ public class S3Storage implements DataStorageInterface {
     }
 
     @Override
-    public URL getLibUrl(String libName) {
-        return null;
+    public String getLibUrl(String libName) {
+        return "s3//:" + this.bucketName + "/" + libName;
+    }
+
+    @Override
+    public String getLibOfFileFromUrl(String url) {
+        String[] strings = url.split("/");
+        return strings[strings.length-2];
     }
 }

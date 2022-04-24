@@ -2,6 +2,7 @@ package Manager.Main;
 
 import Manager.Connection.ApplicationEncoderDecoder;
 import Manager.Connection.SQSConnectionHandler;
+import Manager.Job.S3Storage;
 import Manager.Job.WorkerExecutor;
 import Manager.Protocol.AwsProtocol;
 import SQS.SQSClass;
@@ -42,9 +43,10 @@ public class ManagerMain {
                 getWorkerMessagesName,
                 sqsClient);
         WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker);
+        S3Storage s3Storage = new S3Storage("diamlior321");
         Manager manager = new Manager(
                 requestSelector,
-                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor),
+                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor, s3Storage),
                 10);
 
 
