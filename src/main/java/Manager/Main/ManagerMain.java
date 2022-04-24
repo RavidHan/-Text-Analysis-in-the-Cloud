@@ -59,28 +59,19 @@ public class ManagerMain {
 
         try {
             managerThread.join();
-
+            appConnectionThread.interrupt();
+            workerConnectionThread.interrupt();
             appConnectionThread.join();
             workerConnectionThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            SQSClass.deleteSQSQueue(sqsClient, getAppMessagesName);
-            SQSClass.deleteSQSQueue(sqsClient, sendAppMessagesSQSName);
-            SQSClass.deleteSQSQueue(sqsClient, getWorkerMessagesName);
-            SQSClass.deleteSQSQueue(sqsClient, sendWorkerMessagesSQSName);
             workerExecutor.deleteJobExecutors();
         }
 
 
         System.out.println("Manager closed!");
 
-//        SendMessageRequest messageRequest = SendMessageRequest.builder()
-//                .queueUrl(url)
-//                .messageBody("Timeout Testing")
-//                .delaySeconds(5)
-//                .build();
-//        String msgID = sqsClient.sendMessage(messageRequest).messageId();
-//        System.out.println();
+        // TODO (SHUTDOWN MANAGER? - self)
     }
 }

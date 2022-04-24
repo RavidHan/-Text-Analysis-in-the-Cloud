@@ -1,7 +1,7 @@
 package Manager.Connection;
 
-import Manager.Protocol.Request;
-import Manager.Protocol.RequestUnknownException;
+import Manager.Requests.Request;
+import Manager.Requests.RequestUnknownException;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 public abstract class EncoderDecoder<T, V> {

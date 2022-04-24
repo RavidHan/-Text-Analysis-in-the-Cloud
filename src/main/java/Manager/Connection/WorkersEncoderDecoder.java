@@ -1,22 +1,18 @@
 package Manager.Connection;
 
-import Manager.Protocol.ManagerToWorkerRequest;
-import Manager.Protocol.Request;
-import Manager.Protocol.RequestUnknownException;
-import Manager.Protocol.WorkerToManagerRequest;
+import Manager.Requests.*;
 import javafx.util.Pair;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-public class WorkersEncoderDecoder extends EncoderDecoder<Pair<String, String>, String> {
+public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType, String>, String> {
 
     @Override
-    public String encode(Request<Pair<String, String>> request) throws RequestUnknownException {
+    public String encode(Request<Pair<AnalysisType, String>> request) throws RequestUnknownException {
         if (!(request instanceof ManagerToWorkerRequest)){
             throw new RequestUnknownException();
         }
-        String message = ((ManagerToWorkerRequest) request).getAppMessageId() + " "
-                + request.getData().getKey() + " " + request.getData().getValue();
-        return message;
+        return ((ManagerToWorkerRequest) request).getAppMessageId() + "|"
+                + request.getData().getKey().toString() + "|" + request.getData().getValue();
     }
 
     @Override

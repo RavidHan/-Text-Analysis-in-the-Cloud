@@ -1,12 +1,9 @@
 package Manager.Main;
 
 import Manager.Protocol.*;
-import SQS.SQSClass;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
+import Manager.Requests.Request;
+import Manager.Requests.RequestUnknownException;
 
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 

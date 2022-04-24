@@ -1,9 +1,8 @@
 package Manager.Connection;
 
 import Manager.Main.RequestSelector;
-import Manager.Protocol.AwsProtocol;
-import Manager.Protocol.Request;
-import Manager.Protocol.RequestUnknownException;
+import Manager.Requests.Request;
+import Manager.Requests.RequestUnknownException;
 import SQS.SQSClass;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -39,18 +38,23 @@ public class SQSConnectionHandler extends ConnectionHandler {
     }
 
     @Override
-    public void sendMessage(Request request) throws RequestUnknownException {
+    public String sendMessage(Request request) throws RequestUnknownException {
             try {
                 String message = this.encoderDecoder.encode(request);
-                SQSClass.sendMessageFromString(this.sqsClient, this.sendMessageUrl, message);
+                return SQSClass.sendMessageFromString(this.sqsClient, this.sendMessageUrl, message);
             } catch (RequestUnknownException | Exception e){
                 e.printStackTrace();
             }
+        return null;
     }
 
     @Override
     public void listener() {
             while (true) {
+                if (Thread.interrupted()){
+                    this.terminate();
+                    return;
+                }
                 List<Message> appMessages = SQSClass.receiveOneMessage(this.sqsClient, this.getMessageUrl);
                 if (appMessages == null){
                     System.err.println("Error with receiving messages in SQS: " + this.getMessageUrl);
@@ -70,6 +74,8 @@ public class SQSConnectionHandler extends ConnectionHandler {
     @Override
     public void terminate(){
         this.active = false;
+        SQSClass.deleteQueue(sqsClient, this.sendMessageUrl);
+        SQSClass.deleteQueue(sqsClient, this.getMessageUrl);
     }
 
     @Override

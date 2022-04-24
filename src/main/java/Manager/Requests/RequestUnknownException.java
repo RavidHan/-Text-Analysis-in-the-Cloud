@@ -1,4 +1,4 @@
-package Manager.Protocol;
+package Manager.Requests;
 
 public class RequestUnknownException extends Throwable {
 }

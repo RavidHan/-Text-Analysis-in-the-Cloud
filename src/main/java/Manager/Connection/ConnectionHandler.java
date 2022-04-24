@@ -1,12 +1,12 @@
 package Manager.Connection;
 
-import Manager.Protocol.Request;
-import Manager.Protocol.RequestUnknownException;
+import Manager.Requests.Request;
+import Manager.Requests.RequestUnknownException;
 
 public abstract class ConnectionHandler implements Runnable {
 
     public abstract void listener();
-    public abstract void sendMessage(Request request) throws RequestUnknownException;
+    public abstract String sendMessage(Request request) throws RequestUnknownException;
 
     public abstract void terminate();
 }
