@@ -2,6 +2,8 @@ package Manager.Main;
 
 import Manager.Connection.ApplicationEncoderDecoder;
 import Manager.Connection.SQSConnectionHandler;
+import Manager.Job.S3Storage;
+import Manager.Job.WorkerExecutor;
 import Manager.Protocol.AwsProtocol;
 import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
@@ -40,10 +42,13 @@ public class ManagerMain {
                 sendWorkerMessagesSQSName,
                 getWorkerMessagesName,
                 sqsClient);
+        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker);
+        S3Storage s3Storage = new S3Storage("diamlior321");
         Manager manager = new Manager(
                 requestSelector,
-                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, messagesPerWorker),
-                messagesPerWorker);
+                () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor, s3Storage),
+                10);
+
 
         System.out.println("Starting manager applications listener loop!");
 
@@ -56,28 +61,19 @@ public class ManagerMain {
 
         try {
             managerThread.join();
-
+            appConnectionThread.interrupt();
+            workerConnectionThread.interrupt();
             appConnectionThread.join();
             workerConnectionThread.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-            SQSClass.deleteSQSQueue(sqsClient, getAppMessagesName);
-            SQSClass.deleteSQSQueue(sqsClient, sendAppMessagesSQSName);
-            SQSClass.deleteSQSQueue(sqsClient, getWorkerMessagesName);
-            SQSClass.deleteSQSQueue(sqsClient, sendWorkerMessagesSQSName);
-
+            workerExecutor.deleteJobExecutors();
         }
 
 
         System.out.println("Manager closed!");
 
-//        SendMessageRequest messageRequest = SendMessageRequest.builder()
-//                .queueUrl(url)
-//                .messageBody("Timeout Testing")
-//                .delaySeconds(5)
-//                .build();
-//        String msgID = sqsClient.sendMessage(messageRequest).messageId();
-//        System.out.println();
+        // TODO (SHUTDOWN MANAGER? - self)
     }
 }

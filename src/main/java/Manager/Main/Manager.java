@@ -1,12 +1,9 @@
 package Manager.Main;
 
 import Manager.Protocol.*;
-import SQS.SQSClass;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
+import Manager.Requests.Request;
+import Manager.Requests.RequestUnknownException;
 
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
@@ -21,8 +18,8 @@ public class Manager implements Runnable{
     private RequestSelector requestSelector;
     private final Supplier<Protocol> protocolFactory;
 
-    public Manager(RequestSelector requestSelector, Supplier<Protocol> protocolFactory, int messagesPerWorker){
-        this.executorService =  Executors.newFixedThreadPool(messagesPerWorker);
+    public Manager(RequestSelector requestSelector, Supplier<Protocol> protocolFactory, int threadAmount){
+        this.executorService =  Executors.newFixedThreadPool(threadAmount);
         this.requestSelector = requestSelector;
         this.protocolFactory = protocolFactory;
     }

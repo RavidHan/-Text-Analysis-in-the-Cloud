@@ -1,7 +1,6 @@
 package Manager.Main;
 
-import Manager.Protocol.Request;
-import software.amazon.awssdk.services.sqs.model.Message;
+import Manager.Requests.Request;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -10,6 +9,10 @@ public class RequestSelector {
 
     public RequestSelector(){
         this.allRequestsQueue = new LinkedBlockingQueue<>();
+    }
+
+    public boolean isEmpty(){
+        return allRequestsQueue.isEmpty();
     }
 
     public Request getRequest(){

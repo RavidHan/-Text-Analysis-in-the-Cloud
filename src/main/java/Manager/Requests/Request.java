@@ -1,4 +1,4 @@
-package Manager.Protocol;
+package Manager.Requests;
 
 
 import software.amazon.awssdk.services.sqs.model.Message;

@@ -1,11 +1,6 @@
-package Manager.Protocol;
-
-import javafx.util.Pair;
-import software.amazon.awssdk.services.sqs.model.Message;
+package Manager.Requests;
 
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The Data here represents the request from the Local application.
