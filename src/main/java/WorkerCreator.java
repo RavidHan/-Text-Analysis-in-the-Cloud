@@ -15,9 +15,10 @@ public class WorkerCreator {
         String name = "Worker_EC2";
         String amiId = "ami-0b36cd6786bcfe120";
         Ec2Client ec2 = GetEc2();
-        String inputSQS = "example";
-        String outputSQS = "example";
-        String instanceId = createWorkerInstance(ec2,name, amiId, inputSQS, outputSQS) ;
+        String inputSQS = "https://sqs.us-west-2.amazonaws.com/012182824699/InputQueue";
+        String outputSQS = "https://sqs.us-west-2.amazonaws.com/012182824699/OutputQueue";
+        String bucketName = "diamlior321";
+        String instanceId = createWorkerInstance(ec2,name, amiId, inputSQS, outputSQS, bucketName) ;
         System.out.println("The Amazon EC2 Instance ID is "+instanceId);
         describeEC2Instances(ec2);
         ec2.close();
@@ -30,12 +31,10 @@ public class WorkerCreator {
                 .build();
     }
 
-    private static String getECuserData(String inputSQS, String outputSQS) throws IOException {
+    private static String getECuserData(String inputSQS, String outputSQS, String bucketName) throws IOException {
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
         userData = userData + "cd /home/ec2-user\n";
-        userData = userData + String.format("setenv INPUTSQS %s\n", inputSQS);
-        userData = userData + String.format("setenv OUTPUTSQS %s\n", outputSQS);
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
@@ -49,7 +48,7 @@ public class WorkerCreator {
         userData = userData + "sudo aws s3 cp s3://diamlior321/parse.sh .\n";
         userData = userData + "sudo chmod 755 parse.sh\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
-        userData = userData + "sudo java -cp Text-Analysis.jar Worker\n";
+        userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, bucketName);
         String base64UserData = null;
         try {
             base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
@@ -112,12 +111,12 @@ public class WorkerCreator {
         }
     }
 
-    public static String createWorkerInstance(Ec2Client ec2, String name, String amiId, String inputSQS, String outputSQS) throws IOException {
+    public static String createWorkerInstance(Ec2Client ec2, String name, String amiId, String inputSQS, String outputSQS, String bucketName) throws IOException {
 
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
                 .instanceType(InstanceType.T2_MICRO)
-                .userData(getECuserData(inputSQS, outputSQS))
+                .userData(getECuserData(inputSQS, outputSQS, bucketName))
                 .maxCount(1)
                 .minCount(1)
                 .securityGroups("launch-wizard-2")
