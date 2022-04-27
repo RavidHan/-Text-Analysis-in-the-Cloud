@@ -5,10 +5,11 @@ import software.amazon.awssdk.services.ec2.model.*;
 
 import java.io.*;
 import java.util.Base64;
-import java.util.concurrent.TimeUnit;
 
 
 public class WorkerCreator {
+    static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
+
     public static void main(String[] args) throws InterruptedException, IOException {
 
 
@@ -40,13 +41,6 @@ public class WorkerCreator {
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
-        userData = userData + "sudo wget https://nlp.stanford.edu/software/stanford-parser-4.2.0.zip\n";
-        userData = userData + "sudo unzip stanford-parser-4.2.0.zip\n";
-        userData = userData + "sudo unzip stanford-parser-full-2020-11-17/stanford-parser.jar\n";
-        userData = userData + "sudo unzip -o stanford-parser-full-2020-11-17/stanford-parser-4.2.0-models.jar\n";
-        userData = userData + "sudo cp -rf edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz .\n";
-        userData = userData + "sudo aws s3 cp s3://diamlior321/parse.sh .\n";
-        userData = userData + "sudo chmod 755 parse.sh\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
         userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, bucketName);
         String base64UserData = null;
@@ -95,7 +89,7 @@ public class WorkerCreator {
     }
 
     public static String getCredentials() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\97254\\.aws\\credentials"));
+        BufferedReader br = new BufferedReader(new FileReader(credentialsPath));
         try {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();

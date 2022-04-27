@@ -2,10 +2,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -147,34 +144,25 @@ public class Worker {
     }
     private static String process(Msg m) throws IOException, InterruptedException {
         // Processes the message from the manager and returns the URL to S3
-        Process p;
-        String[] lines = getLines(m);
-        int numOfFiles = saveFiles(lines, m.container);
+        String file_path = saveFileFromWeb(m);
         String resultPath = String.format("%s_result", messageId);
-        System.out.printf("Processing the message into file: %s\n", resultPath);
-        String taskName;
-
-        if(m.job == ParsingJob.POS)
-            taskName = "wordsAndTags";
-        else if (m.job == ParsingJob.DEPENDENCY)
-            taskName = "typedDependencies";
-        else
-            taskName = "penn";
-
-
-        for(int i = 0; i < numOfFiles; i++){
-            System.out.printf("Running: sh parse.sh %s_%d %s %s\n", m.container, i, taskName, resultPath);
-            p = Runtime.getRuntime().exec(String.format("sh parse.sh %s_%d %s %s", m.container, i, taskName, resultPath));
-
-            p.waitFor();
+        File resultFile = new File(resultPath);
+        if(!resultFile.createNewFile()){
+            String errMsg = String.format("File named %s already exists", resultFile);
+            System.out.println(errMsg);
+            return errMsg;
         }
-
+        System.out.printf("Processing the message into file: %s\n", resultPath);
+        String result = StanfordParser.parse(file_path, resultPath, m.job);
         String ObjectKey = String.format("%s/%s", m.container, messageId);
-        return S3Helper.putS3Object(Worker.bucketName, ObjectKey, resultPath);
+        if(result.equals("1"))
+            return S3Helper.putS3Object(Worker.bucketName, ObjectKey, resultPath);
+        else
+            return result;
     }
 
 
-    private static String[] getLines(Msg m) throws IOException {
+    private static String saveFileFromWeb(Msg m) throws IOException {
         // Gets the text from the url and return all the sentences divided by "."
 
         URL url = new URL(m.inputLink);
@@ -191,9 +179,11 @@ public class Worker {
         }
 
         bufferedReader.close();
-        String s = stringBuilder.toString().replace("\r\n", " ");
-        String[] lines = s.split("[.]+");
-        return lines;
+        String savedPath = String.format("%s.txt", messageId);
+        try (PrintWriter out = new PrintWriter(savedPath)) {
+            out.println(stringBuilder.toString());
+        }
+        return savedPath;
     }
 
     private static int saveFiles(String[] lines, String id){
