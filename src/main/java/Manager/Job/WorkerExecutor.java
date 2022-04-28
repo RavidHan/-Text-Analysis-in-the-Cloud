@@ -20,6 +20,10 @@ public class WorkerExecutor implements JobExecutor {
     private int messagesPerWorker;
     private SqsClient sqsClient;
     private String bucketName;
+    private static Tag workerTag = Tag.builder()
+            .key("Name")
+            .value("Worker")
+            .build();
     private static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
 
     public WorkerExecutor(String inputSQS, String outputSQS, SqsClient sqsClient, int messagesPerWorker, String bucketName) {
@@ -66,6 +70,7 @@ public class WorkerExecutor implements JobExecutor {
 
                 do {
                     Filter filter = Filter.builder()
+                            .name("instance-state-name")
                             .values("running")
                             .build();
 
@@ -77,7 +82,7 @@ public class WorkerExecutor implements JobExecutor {
 
                     for (Reservation reservation : response.reservations()) {
                         for (Instance instance : reservation.instances()) {
-                            if (instance.tags().contains("Worker")){
+                            if (instance.tags().contains(this.workerTag)){
                                 workersNum++;
                             }
                         }
@@ -131,7 +136,7 @@ public class WorkerExecutor implements JobExecutor {
     @Override
     public synchronized void createWorkers() {
         int currWorkers = this.getNumberOfWorkers();
-        int workersNeeded = SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) % this.messagesPerWorker;
+        int workersNeeded = SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) / this.messagesPerWorker;
         if (currWorkers < workersNeeded){
             for (int i = currWorkers; i < workersNeeded && i <= 19; i++){
                 this.createJobExecutor();
@@ -194,13 +199,13 @@ public class WorkerExecutor implements JobExecutor {
 
         RunInstancesRequest runRequest = null;
         try {
-            runRequest = RunInstancesRequest.builder()
+            runRequest =  RunInstancesRequest.builder()
                     .imageId(this.amiId)
                     .instanceType(InstanceType.T2_MICRO)
                     .userData(getECuserData(this.inputSQS, this.outputSQS))
                     .maxCount(1)
                     .minCount(1)
-                    .securityGroups("launch-wizard-2")
+                    .securityGroups("launch-wizard-1")
                     .build();
         } catch (IOException e) {
             e.printStackTrace();

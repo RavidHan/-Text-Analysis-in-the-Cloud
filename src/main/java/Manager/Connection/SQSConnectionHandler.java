@@ -7,19 +7,18 @@ import SQS.SQSClass;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-import java.net.URL;
 import java.util.List;
 
 public class SQSConnectionHandler extends ConnectionHandler {
 
-    private ApplicationEncoderDecoder encoderDecoder;
+    private EncoderDecoder encoderDecoder;
     private String sendMessageUrl;
     private String getMessageUrl;
     private SqsClient sqsClient;
     private RequestSelector requestSelector;
     private boolean active;
 
-    public SQSConnectionHandler(ApplicationEncoderDecoder encoderDecoder, RequestSelector requestSelector, String sendMessageName, String getMessageName, SqsClient sqsClient) {
+    public SQSConnectionHandler(EncoderDecoder encoderDecoder, RequestSelector requestSelector, String sendMessageName, String getMessageName, SqsClient sqsClient) {
         this.encoderDecoder = encoderDecoder;
         this.sqsClient = sqsClient;
         this.sendMessageUrl = this.getQueueUrl(sendMessageName);
@@ -63,7 +62,12 @@ public class SQSConnectionHandler extends ConnectionHandler {
                 if (appMessages.isEmpty()){
                     continue;
                 }
-                Request<String> req = this.encoderDecoder.decode(appMessages.get(0));
+                Request<String> req = null;
+                try {
+                    req = this.encoderDecoder.decode(appMessages.get(0));
+                } catch (RequestUnknownException e) {
+                    continue;
+                }
                 if (req != null) {
                     this.requestSelector.putMessage(req);
                     SQSClass.deleteMessages(this.sqsClient, this.getMessageUrl, appMessages);
