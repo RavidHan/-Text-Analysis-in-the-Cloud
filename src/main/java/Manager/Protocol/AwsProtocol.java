@@ -13,6 +13,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -77,27 +78,38 @@ public class AwsProtocol extends Protocol<Request>{
                 List<ManagerToWorkerRequest> managerToWorkerRequests = new LinkedList<>();
                 JsonArrayBuilder dataArray = Json.createArrayBuilder();
                 JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray);
-                URL url = req.getData();
+
                 // read text returned by server
-                BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+                InputStream inputStream = dataStorage.getFile(req.getData());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
-                while ((line = in.readLine()) != null) {
+                while ((line = reader.readLine()) != null) {
                     String[] strings = line.split("\t");
                     if (strings.length == 2) {
                         ManagerToWorkerRequest managerToWorkerRequest = new ManagerToWorkerRequest();
-                        managerToWorkerRequest.setData(new Pair<>(AnalysisType.valueOf(strings[0]), strings[1]));
+                        AnalysisType.AnalysisTypeEnum analysisTypeEnum = AnalysisType.getAnalysisType(strings[0]);
+                        System.out.println(analysisTypeEnum);
+                        if (analysisTypeEnum == null){
+                            // TODO ERROR MESSAGE
+                            return;
+                        }
+                        managerToWorkerRequest.setData(new Pair<>(analysisTypeEnum, strings[1]));
                         managerToWorkerRequest.setAppMessageId(req.getId());
                         managerToWorkerRequests.add(managerToWorkerRequest);
+                        System.out.println("added request");
                         String messageId = this.workersConnection.sendMessage(managerToWorkerRequest);
+                        System.out.println("send message to worker");
                         dataArray.add(Json.createObjectBuilder()
                                         .add("workerMessageId", messageId)
                                         .add("analysisType", managerToWorkerRequest.getData().getKey().toString())
                                         .add("inputLink", managerToWorkerRequest.getData().getValue()));
+                        System.out.println("added message to json");
                     }
                 }
+                System.out.println("finished breakimg txt file");
                 this.dataStorage.createLibInfoFile(req.getId(), s3LibData.build());
                 appMessagesAmountMap.put(req.getId(), managerToWorkerRequests.size());
-                in.close();
+                reader.close();
                 jobExecutor.createWorkers();
             } catch (MalformedURLException e) {
                 System.err.println("Malformed URL: " + e.getMessage());

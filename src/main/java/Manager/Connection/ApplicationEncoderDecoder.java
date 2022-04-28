@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class ApplicationEncoderDecoder extends EncoderDecoder<String, URL> {
+public class ApplicationEncoderDecoder extends EncoderDecoder<String, String> {
 
     @Override
     public String encode(Request<String> request) throws RequestUnknownException {
@@ -20,19 +20,15 @@ public class ApplicationEncoderDecoder extends EncoderDecoder<String, URL> {
     }
 
     @Override
-    public Request<URL> decode(Message message) {
+    public Request<String> decode(Message message) {
         AppToManagerRequest appToManagerRequest = new AppToManagerRequest();
         appToManagerRequest.setId(message.messageId());
-        try {
+
             if (message.body().equals("terminate")){
                 appToManagerRequest.setTerminationMessage(true);
             } else {
-                appToManagerRequest.setData(new URL(message.body()));
+                appToManagerRequest.setData(message.body());
             }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
         return appToManagerRequest;
     }
 }

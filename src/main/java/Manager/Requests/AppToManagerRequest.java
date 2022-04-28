@@ -7,7 +7,7 @@ import java.net.URL;
  * Each file and analysing method is represented as a Pair<String htmlFile, String analysingMethod>.
  * The request is a list of the pairs described above.
  */
-public class AppToManagerRequest extends Request<URL> {
+public class AppToManagerRequest extends Request<String> {
 
     private boolean terminationMessage;
     private String id;

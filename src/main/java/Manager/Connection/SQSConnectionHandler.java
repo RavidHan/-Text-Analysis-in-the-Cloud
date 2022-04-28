@@ -21,9 +21,9 @@ public class SQSConnectionHandler extends ConnectionHandler {
 
     public SQSConnectionHandler(ApplicationEncoderDecoder encoderDecoder, RequestSelector requestSelector, String sendMessageName, String getMessageName, SqsClient sqsClient) {
         this.encoderDecoder = encoderDecoder;
+        this.sqsClient = sqsClient;
         this.sendMessageUrl = this.getQueueUrl(sendMessageName);
         this.getMessageUrl = this.getQueueUrl(getMessageName);
-        this.sqsClient = sqsClient;
         this.requestSelector = requestSelector;
         this.active = true;
     }
@@ -63,7 +63,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
                 if (appMessages.isEmpty()){
                     continue;
                 }
-                Request<URL> req = this.encoderDecoder.decode(appMessages.get(0));
+                Request<String> req = this.encoderDecoder.decode(appMessages.get(0));
                 if (req != null) {
                     this.requestSelector.putMessage(req);
                     SQSClass.deleteMessages(this.sqsClient, this.getMessageUrl, appMessages);

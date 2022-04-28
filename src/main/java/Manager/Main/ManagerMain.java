@@ -42,8 +42,8 @@ public class ManagerMain {
                 sendWorkerMessagesSQSName,
                 getWorkerMessagesName,
                 sqsClient);
-        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker);
-        S3Storage s3Storage = new S3Storage("diamlior321");
+        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker, "diamlior321");
+        S3Storage s3Storage = new S3Storage("thecoolbucketthatismine");
         Manager manager = new Manager(
                 requestSelector,
                 () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor, s3Storage),

@@ -33,7 +33,9 @@ public class Manager implements Runnable{
             Request request = requestSelector.getRequest();
             Protocol protocol = protocolFactory.get();
             try {
-                executorService.execute(protocol.process(request));
+                if (request != null) {
+                    executorService.execute(protocol.process(request));
+                }
             } catch (RequestUnknownException e) {
                 e.printStackTrace();
                 continue;

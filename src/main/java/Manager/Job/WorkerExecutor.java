@@ -19,8 +19,11 @@ public class WorkerExecutor implements JobExecutor {
     private String outputSQS;
     private int messagesPerWorker;
     private SqsClient sqsClient;
+    private String bucketName;
+    private static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
 
-    public WorkerExecutor(String inputSQS, String outputSQS, SqsClient sqsClient, int messagesPerWorker) {
+    public WorkerExecutor(String inputSQS, String outputSQS, SqsClient sqsClient, int messagesPerWorker, String bucketName) {
+        this.bucketName = bucketName;
         this.sqsClient = sqsClient;
         this.messagesPerWorker = messagesPerWorker;
         this.ec2 = GetEc2();
@@ -40,25 +43,16 @@ public class WorkerExecutor implements JobExecutor {
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
         userData = userData + "cd /home/ec2-user\n";
-        userData = userData + String.format("setenv INPUTSQS %s\n", inputSQS);
-        userData = userData + String.format("setenv OUTPUTSQS %s\n", outputSQS);
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
-        userData = userData + "sudo wget https://nlp.stanford.edu/software/stanford-parser-4.2.0.zip\n";
-        userData = userData + "sudo unzip stanford-parser-4.2.0.zip\n";
-        userData = userData + "sudo unzip stanford-parser-full-2020-11-17/stanford-parser.jar\n";
-        userData = userData + "sudo unzip -o stanford-parser-full-2020-11-17/stanford-parser-4.2.0-models.jar\n";
-        userData = userData + "sudo cp -rf edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz .\n";
-        userData = userData + "sudo aws s3 cp s3://diamlior321/parse.sh .\n";
-        userData = userData + "sudo chmod 755 parse.sh\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
-        userData = userData + "sudo java -cp Text-Analysis.jar Worker\n";
+        userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, this.bucketName);
         String base64UserData = null;
         try {
-            base64UserData = new String(Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8");
+            base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -179,7 +173,7 @@ public class WorkerExecutor implements JobExecutor {
     }
 
     private String getCredentials() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\97254\\.aws\\credentials"));
+        BufferedReader br = new BufferedReader(new FileReader(credentialsPath));
         try {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();

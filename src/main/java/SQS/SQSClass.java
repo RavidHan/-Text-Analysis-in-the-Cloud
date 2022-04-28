@@ -210,7 +210,7 @@ public class SQSClass {
     }
 
     public static List<Message> receiveOneMessage(SqsClient sqsClient, String queueUrl) {
-        System.out.println("\nReceive messages");
+//        System.out.println("\nReceive messages");
 
         try {
             // snippet-start:[sqs.java2.sqs_example.retrieve_messages]

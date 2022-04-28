@@ -1,11 +1,11 @@
 package Manager.Job;
 
-import javax.json.Json;
-import java.net.URL;
+import java.io.InputStream;
 
 public interface DataStorageInterface {
     void createLibInfoFile(String libName, Object libInfo);
     int getFilesAmountInLib(String libName);
     String getLibUrl(String libName);
     String getLibOfFileFromUrl(String toString);
+    InputStream getFile(String location);
 }

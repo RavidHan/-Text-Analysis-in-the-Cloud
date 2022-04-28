@@ -2,7 +2,7 @@ package Manager.Requests;
 
 import javafx.util.Pair;
 
-public class ManagerToWorkerRequest extends Request<Pair<AnalysisType, String>> {
+public class ManagerToWorkerRequest extends Request<Pair<AnalysisType.AnalysisTypeEnum, String>> {
 
     private String appMessageId;
 

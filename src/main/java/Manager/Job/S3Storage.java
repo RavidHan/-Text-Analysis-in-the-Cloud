@@ -1,5 +1,6 @@
 package Manager.Job;
 
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
@@ -20,6 +21,12 @@ public class S3Storage implements DataStorageInterface {
 
     public S3Storage(String bucketName) {
         this.bucketName = bucketName;
+    }
+
+    @Override
+    public InputStream getFile(String location) {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(this.bucketName).key(location).build();
+        return this.s3.getObject(getObjectRequest);
     }
 
     @Override

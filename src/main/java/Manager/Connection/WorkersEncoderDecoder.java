@@ -4,10 +4,10 @@ import Manager.Requests.*;
 import javafx.util.Pair;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType, String>, String> {
+public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType.AnalysisTypeEnum, String>, String> {
 
     @Override
-    public String encode(Request<Pair<AnalysisType, String>> request) throws RequestUnknownException {
+    public String encode(Request<Pair<AnalysisType.AnalysisTypeEnum, String>> request) throws RequestUnknownException {
         if (!(request instanceof ManagerToWorkerRequest)){
             throw new RequestUnknownException();
         }
