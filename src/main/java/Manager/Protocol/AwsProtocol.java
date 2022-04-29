@@ -58,7 +58,7 @@ public class AwsProtocol extends Protocol<Request>{
 
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         return () -> {
-            String appMessageId = dataStorage.getLibOfFileFromUrl(req.getData());
+            String appMessageId = req.getData()[0];
             if (this.dataStorage.getFilesAmountInLib(appMessageId) == appMessagesAmountMap.get(appMessageId)){
                 ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
                 managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));

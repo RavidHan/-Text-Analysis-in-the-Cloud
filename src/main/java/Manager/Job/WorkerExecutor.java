@@ -46,7 +46,7 @@ public class WorkerExecutor implements JobExecutor {
     private String getECuserData(String inputSQS, String outputSQS) throws IOException {
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
-        userData = userData + "cd /home/ec2-user\n";
+//        userData = userData + "cd /home/ec2-user\n";
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
@@ -136,7 +136,7 @@ public class WorkerExecutor implements JobExecutor {
     @Override
     public synchronized void createWorkers() {
         int currWorkers = this.getNumberOfWorkers();
-        int workersNeeded = SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) / this.messagesPerWorker;
+        int workersNeeded = (SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) / this.messagesPerWorker)+1;
         if (currWorkers < workersNeeded){
             for (int i = currWorkers; i < workersNeeded && i <= 19; i++){
                 this.createJobExecutor();
