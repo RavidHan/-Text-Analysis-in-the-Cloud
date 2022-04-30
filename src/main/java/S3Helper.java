@@ -1,13 +1,13 @@
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 // snippet-end:[s3.java2.s3_object_upload.import]
@@ -42,6 +42,28 @@ public class S3Helper {
         String result = putS3Object(bucketName, objectKey, objectPath);
         System.out.println("Tag information: "+result);
     }
+
+    public static String getFileData(String filePath) {
+        try {
+            Region region = Region.US_WEST_2;
+            S3Client s3 = S3Client.builder()
+                    .region(region)
+                    .build();
+            GetObjectRequest objectRequest = GetObjectRequest
+                    .builder()
+                    .key(filePath)
+                    .bucket(LocalApplication.bucketName)
+                    .build();
+            ResponseBytes<GetObjectResponse> objectBytes = s3.getObjectAsBytes(objectRequest);
+            byte[] data = objectBytes.asByteArray();
+            return new String(data, StandardCharsets.UTF_8);
+        } catch (S3Exception e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+        return "";
+    }
+
 
     public static int getFilesNum(String bucketName, String prefix){
         int sum = 0;

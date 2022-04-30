@@ -11,9 +11,12 @@ import software.amazon.awssdk.services.ec2.model.Instance;
 import software.amazon.awssdk.services.ec2.model.Reservation;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 
+import javax.json.Json;
+import javax.json.JsonObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +25,19 @@ public class LocalApplication {
     static String managerName = "Manager_EC2";
     static String bucketName = "diamlior321";
 
+    static class ResultEntry{
+        public String job;
+        public String inputLink;
+        public String outputLink;
+        public boolean hasFailed;
+
+        public ResultEntry(String job, String inputLink, String outputLink, boolean hasFailed){
+            this.job = job;
+            this.inputLink = inputLink;
+            this.outputLink = outputLink;
+            this.hasFailed = hasFailed;
+        }
+    }
     public static void main(String[] args) throws InterruptedException, IOException {
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(System.in));
@@ -39,6 +55,7 @@ public class LocalApplication {
         System.out.println("Waiting for input SQS...");
         String inputURL = waitForQueue(sqsClient, "sendAppMessagesSQS");
         System.out.println("Input SQS is on!");
+        System.out.println(String.format("Sending %s to outputSQS\n", fileKey));
         String id = SQSClass.sendMessageFromString(sqsClient, outputURL, fileKey);
         while(true) {
             List<Message> msgs = SQSClass.receiveMessages(sqsClient, inputURL);
@@ -46,8 +63,8 @@ public class LocalApplication {
                 for(Message msg : msgs) {
                     String s = msg.body();
                     if (s.equals(id)) {
-                        System.out.println("YESSSSS");
-                        SQSClass.deleteMessage(sqsClient, inputURL, msg);
+                        ResultEntry[] resultsArray = parseResults(id);
+                        HTMLCreator.createHTML(resultsArray, id);
                     }
                 }
             TimeUnit.SECONDS.sleep(1);
@@ -55,6 +72,15 @@ public class LocalApplication {
 
     }
 
+    public static ResultEntry[] parseResults(String id){
+        // TODO: finish parsing function
+        String data = S3Helper.getFileData(id + "/ID-INFO.json");
+        JsonObject json = Json.createReader(new StringReader(data)).readObject();
+        if(json.get("files").toString() == "[]")
+            return null;
+
+        return new ResultEntry[2];
+    }
 
     public static boolean isManagerOn( Ec2Client ec2){
         boolean done = false;
