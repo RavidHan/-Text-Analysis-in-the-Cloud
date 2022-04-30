@@ -151,9 +151,6 @@ public class SQSClass {
     }
 
     public static  List<Message> receiveMessages(SqsClient sqsClient, String queueUrl) {
-
-        System.out.println("\nReceive messages");
-
         try {
             // snippet-start:[sqs.java2.sqs_example.retrieve_messages]
             ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
@@ -207,6 +204,14 @@ public class SQSClass {
             System.err.println(e.awsErrorDetails().errorMessage());
             System.exit(1);
         }
+    }
+
+    public static void deleteMessage(SqsClient sqsClient, String queueURL, Message message){
+        DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
+                .queueUrl(queueURL)
+                .receiptHandle(message.receiptHandle())
+                .build();
+        sqsClient.deleteMessage(deleteMessageRequest);
     }
 
     public static List<Message> receiveOneMessage(SqsClient sqsClient, String queueUrl) {

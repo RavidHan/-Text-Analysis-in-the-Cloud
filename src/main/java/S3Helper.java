@@ -32,7 +32,7 @@ public class S3Helper {
                 "  objectPath - the path where the file is located (for example, C:/AWS/book2.pdf). \n\n" ;
 
 
-        String bucketName = "diamlior321";
+        String bucketName = LocalApplication.bucketName;
         String objectKey = "ListObjects/ListObjects.java";
         String objectPath = "143_0";
         System.out.println("Putting object " + objectKey +" into bucket "+bucketName);

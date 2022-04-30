@@ -1,119 +1,128 @@
+import Manager.ManagerCreator;
+import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeInstancesResponse;
+import software.amazon.awssdk.services.ec2.model.Instance;
+import software.amazon.awssdk.services.ec2.model.Reservation;
+import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Base64;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
 public class LocalApplication {
-    public static void main(String[] args) throws InterruptedException {
+    static String managerName = "Manager_EC2";
+    static String bucketName = "diamlior321";
 
+    public static void main(String[] args) throws InterruptedException, IOException {
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in));
 
-        String name = "AnotherName";
-        String amiId = "ami-0b36cd6786bcfe120";
-        Ec2Client ec2 = GetEc2();
-        String instanceId = createEC2Instance(ec2,name, amiId) ;
-        System.out.println("The Amazon EC2 Instance ID is "+instanceId);
-        TimeUnit.SECONDS.sleep(40);
-        describeEC2Instances(ec2);
-        stopEC2Instance(ec2, instanceId);
-        ec2.close();
-    }
-
-    public static Ec2Client GetEc2(){
-        Region region = Region.US_WEST_2;
-        return Ec2Client.builder()
-                .region(region)
+        System.out.print("Enter path to input file: ");
+        String filePath = reader.readLine();
+        createManagerIfNeeded();
+        String fileKey = uploadFile(filePath, bucketName);
+        SqsClient sqsClient = SqsClient.builder()
+                .region(Region.US_WEST_2)
                 .build();
-    }
-
-    private static String getECSuserData(String s) {
-        String userData = "";
-        userData = userData + "#!/bin/bash" + "\n";
-        userData = userData + "echo " + s + " ";
-        userData = userData + ">> /home/ec2-user/helloworld.txt";
-        String base64UserData = null;
-        try {
-            base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        System.out.println("Waiting for output SQS... This might take a while...");
+        String outputURL = waitForQueue(sqsClient, "getAppMessagesSQS");
+        System.out.println("Output SQS is on!");
+        System.out.println("Waiting for input SQS...");
+        String inputURL = waitForQueue(sqsClient, "sendAppMessagesSQS");
+        System.out.println("Input SQS is on!");
+        String id = SQSClass.sendMessageFromString(sqsClient, outputURL, fileKey);
+        while(true) {
+            List<Message> msgs = SQSClass.receiveMessages(sqsClient, inputURL);
+            if(!msgs.isEmpty())
+                for(Message msg : msgs) {
+                    String s = msg.body();
+                    if (s.equals(id)) {
+                        System.out.println("YESSSSS");
+                        SQSClass.deleteMessage(sqsClient, inputURL, msg);
+                    }
+                }
+            TimeUnit.SECONDS.sleep(1);
         }
-        return base64UserData;
+
     }
 
-    public static void describeEC2Instances( Ec2Client ec2){
 
+    public static boolean isManagerOn( Ec2Client ec2){
         boolean done = false;
         String nextToken = null;
-
         try {
-
             do {
                 DescribeInstancesRequest request = DescribeInstancesRequest.builder().maxResults(6).nextToken(nextToken).build();
                 DescribeInstancesResponse response = ec2.describeInstances(request);
-
-                for (Reservation reservation : response.reservations()) {
-                    for (Instance instance : reservation.instances()) {
-                        System.out.println("Instance Id is " + instance.instanceId());
-                        System.out.println("Image id is "+  instance.imageId());
-                        System.out.println("Instance type is "+  instance.instanceType());
-                        System.out.println("Instance state name is "+  instance.state().name());
-                        System.out.println("monitoring information is "+  instance.monitoring().state());
-
-                    }
-                }
+                for (Reservation reservation : response.reservations())
+                    for (Instance instance : reservation.instances())
+                        if(instance.hasTags() && instance.state().name() == InstanceStateName.RUNNING)
+                            for(Tag t : instance.tags())
+                                if(t.key().equals("Name") && t.value().equals(managerName))
+                                    return true;
                 nextToken = response.nextToken();
             } while (nextToken != null);
-
         } catch (Ec2Exception e) {
             System.err.println(e.awsErrorDetails().errorMessage());
             System.exit(1);
         }
+        return false;
     }
 
-    public static void stopEC2Instance(Ec2Client ec2, String id) {
-        StopInstancesRequest runRequest = StopInstancesRequest.builder().instanceIds(id).build();
-
-        ec2.stopInstances(runRequest);
+    private static void createManagerIfNeeded() throws IOException {
+        Ec2Client ec2 = Ec2Client.builder()
+                .region(Region.US_WEST_2)
+                .build();
+        if (isManagerOn(ec2)){
+            System.out.println("Manager EC2 found! No need to create a new one.");
+            return;
+        }
+        System.out.println("Creating a Manager EC2 instance. This can take a while as we need to wait for the instance to start.");
+        ManagerCreator.createManagerInstance(managerName);
     }
-    public static String createEC2Instance(Ec2Client ec2, String name, String amiId ) {
-        RunInstancesRequest runRequest = RunInstancesRequest.builder()
-                .imageId(amiId)
-                .instanceType(InstanceType.T2_MICRO)
-                .userData(getECSuserData("hello world"))
-                .maxCount(1)
-                .minCount(1)
-                .securityGroups("launch-wizard-2")
-                .build();
-
-        RunInstancesResponse response = ec2.runInstances(runRequest);
-        String instanceId = response.instances().get(0).instanceId();
-
-        Tag tag = Tag.builder()
-                .key("Name")
-                .value(name)
-                .build();
-
-        CreateTagsRequest tagRequest = CreateTagsRequest.builder()
-                .resources(instanceId)
-                .tags(tag)
-                .build();
-
+    private static String waitForQueue(SqsClient sqsClient, String queueName) throws InterruptedException {
         try {
-            ec2.createTags(tagRequest);
-            System.out.printf(
-                    "Successfully started EC2 Instance %s based on AMI %s",
-                    instanceId, amiId);
-
-            return instanceId;
-
-        } catch (Ec2Exception e) {
-            System.err.println(e.awsErrorDetails().errorMessage());
-            System.exit(1);
+            String name = SQSClass.getQueueByName(sqsClient, queueName);
+            while (name == null) {
+                TimeUnit.SECONDS.sleep(1);
+                name = SQSClass.getQueueByName(sqsClient, queueName);
+            }
+            return name;
+        } catch (Exception e) {
+            System.out.println(e.toString());
+            return null;
         }
-
-        return "";
     }
+
+    private static String uploadFile(String filePath, String bucketName){
+        String[] s = filePath.split("/");
+        String fileName = s[s.length - 1];
+
+
+        if(!S3Helper.doesObjectExists(bucketName, fileName)){
+            S3Helper.putS3Object(bucketName, fileName, filePath);
+            System.out.printf("Uploading %s succeeded!\n", fileName);
+            return fileName;
+        }
+        else{
+            int counter = 0;
+            String tempFileName = String.format("%s%d", fileName, counter);
+            while(!S3Helper.doesObjectExists(bucketName, fileName))
+                counter++;
+            S3Helper.putS3Object(bucketName, tempFileName, filePath);
+            System.out.printf("Uploading %s succeeded under the name: %s!\n", fileName, tempFileName);
+            return tempFileName;
+        }
+    }
+
+
 }

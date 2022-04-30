@@ -86,7 +86,7 @@ public class Worker {
 
     private static void deleteAllFiles(Msg m) throws IOException {
         Runtime.getRuntime().exec(String.format("rm -rf %s_*", messageId));
-        System.out.printf("Deleting all files: rm -rf %s_*", messageId);
+        System.out.printf("Deleting all files: rm -rf %s_*\n", messageId);
     }
 
     private static void deleteMessage(SqsClient sqsClient){
@@ -104,7 +104,7 @@ public class Worker {
                 .queueUrl(outputSQS)
                 .messageBody(resultURL).build();
         sqsClient.sendMessage(sendMessageRequest);
-        System.out.printf("Result was sent to: %s", resultURL);
+        System.out.printf("Result was sent to: %s\n", resultURL);
     }
 
     private static String getMsg(SqsClient sqsClient){
@@ -142,7 +142,7 @@ public class Worker {
         }
 
     }
-    private static String process(Msg m) throws IOException, InterruptedException {
+    private static String process(Msg m) throws IOException {
         // Processes the message from the manager and returns the URL to S3
         String file_path = saveFileFromWeb(m);
         String resultPath = String.format("%s_result", messageId);
@@ -163,7 +163,7 @@ public class Worker {
 
 
     private static String saveFileFromWeb(Msg m) throws IOException {
-        // Gets the text from the url and return all the sentences divided by "."
+        // Gets the text from the url and save into messageId.txt
 
         URL url = new URL(m.inputLink);
         BufferedReader bufferedReader = new BufferedReader(
@@ -184,50 +184,5 @@ public class Worker {
             out.println(stringBuilder.toString());
         }
         return savedPath;
-    }
-
-    private static int saveFiles(String[] lines, String id){
-        // Saves the input text as small text files of length 200~ by the name of id_counter. E.G: 172_2
-        // This is because Stanford parser can't parse big chunks of text
-
-        StringBuilder stringBuilder = new StringBuilder();
-        int counter = 0;
-
-        for (String line : lines) {
-            stringBuilder.append(line + ".\n");
-            if (stringBuilder.length() > 300) {
-                saveFile(stringBuilder.toString(), String.format("%s_%d", id, counter));
-                stringBuilder = new StringBuilder();
-                counter++;
-            }
-        }
-        if(stringBuilder.length() > 0) {
-            saveFile(stringBuilder.toString(), String.format("%s_%d", id, counter));
-            counter++;
-        }
-
-        return counter;
-    }
-
-    private static void saveFinalTextFile(int counter, String id){
-        // Save a file with the pathes to all the text files
-
-        StringBuilder stringBuilder = new StringBuilder();
-        for(int i = 0; i < counter; i++){
-            stringBuilder.append(String.format("%s_%d\n", id, i));
-        }
-
-        saveFile(stringBuilder.toString(), String.format("%s_final", id));
-    }
-
-    private static void saveFile(String s, String name){
-        try {
-            FileWriter myWriter = new FileWriter(name);
-            myWriter.write(s);
-            myWriter.close();
-        } catch (IOException e) {
-            System.out.println("An error occurred while trying to save: \n" + name);
-            e.printStackTrace();
-        }
     }
 }

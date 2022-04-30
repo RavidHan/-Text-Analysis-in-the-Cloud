@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class ManagerMain {
-
+    static String bucketName = "diamlior321";
     public static void main(String[] args) {
 
         /**if (args.length < 1) {
@@ -48,7 +48,7 @@ public class ManagerMain {
                 getWorkerMessagesName,
                 sqsClient);
         WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker, "diamlior321");
-        S3Storage s3Storage = new S3Storage("thecoolbucketthatismine", s3Client);
+        S3Storage s3Storage = new S3Storage(bucketName, s3Client);
         Manager manager = new Manager(
                 requestSelector,
                 () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor, s3Storage),

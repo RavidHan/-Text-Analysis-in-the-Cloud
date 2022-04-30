@@ -1,4 +1,4 @@
-import Manager.Main.ManagerMain;
+package Manager;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
@@ -8,22 +8,10 @@ import java.io.*;
 import java.util.Base64;
 
 
-public class WorkerCreator {
+public class ManagerCreator {
     static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
 
     public static void main(String[] args) throws InterruptedException, IOException {
-
-
-        String name = "Worker_EC2";
-        String amiId = "ami-0b36cd6786bcfe120";
-        Ec2Client ec2 = GetEc2();
-        String inputSQS = "https://sqs.us-west-2.amazonaws.com/012182824699/InputQueue";
-        String outputSQS = "https://sqs.us-west-2.amazonaws.com/012182824699/OutputQueue";
-        String bucketName = LocalApplication.bucketName;
-        String instanceId = createWorkerInstance(ec2,name, amiId, inputSQS, outputSQS, bucketName) ;
-        System.out.println("The Amazon EC2 Instance ID is "+instanceId);
-        describeEC2Instances(ec2);
-        ec2.close();
     }
 
     public static Ec2Client GetEc2(){
@@ -33,7 +21,7 @@ public class WorkerCreator {
                 .build();
     }
 
-    private static String getECuserData(String inputSQS, String outputSQS, String bucketName) throws IOException {
+    private static String getECuserData() throws IOException {
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
         userData = userData + "cd /home/ec2-user\n";
@@ -43,7 +31,7 @@ public class WorkerCreator {
         userData = userData + "cd -\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
-        userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, bucketName);
+        userData = userData + "sudo java -cp Text-Analysis.jar Manager.Main.ManagerMain\n";
         String base64UserData = null;
         try {
             base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
@@ -106,12 +94,14 @@ public class WorkerCreator {
         }
     }
 
-    public static String createWorkerInstance(Ec2Client ec2, String name, String amiId, String inputSQS, String outputSQS, String bucketName) throws IOException {
+    public static String createManagerInstance(String name) throws IOException {
 
+        String amiId = "ami-0b36cd6786bcfe120";
+        Ec2Client ec2 = GetEc2();
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
                 .instanceType(InstanceType.T2_MICRO)
-                .userData(getECuserData(inputSQS, outputSQS, bucketName))
+                .userData(getECuserData())
                 .maxCount(1)
                 .minCount(1)
                 .securityGroups("launch-wizard-2")
@@ -133,7 +123,7 @@ public class WorkerCreator {
         try {
             ec2.createTags(tagRequest);
             System.out.printf(
-                    "Successfully started EC2 Instance %s based on AMI %s",
+                    "Successfully started EC2 Instance %s based on AMI %s\n",
                     instanceId, amiId);
 
             return instanceId;
