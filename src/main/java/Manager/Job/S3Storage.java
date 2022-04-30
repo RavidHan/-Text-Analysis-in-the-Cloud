@@ -2,13 +2,17 @@ package Manager.Job;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import javax.json.*;
+import javax.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -17,7 +21,7 @@ import java.util.ListIterator;
 public class S3Storage implements DataStorageInterface {
     private String bucketName;
     private S3Client s3;
-    private static final String id_file_name= "ID-INFO.json";
+    private static final String idFileName= "ID-INFO.json";
 
     public S3Storage(String bucketName, S3Client s3) {
         this.s3 = s3;
@@ -31,12 +35,46 @@ public class S3Storage implements DataStorageInterface {
     }
 
     @Override
+    public boolean insertResult(String appMessageId, String input, String analysis, String output) {
+        boolean finished = true;
+        InputStream idFile = this.getFile(appMessageId + "\\" + idFileName);
+        JsonReader reader = Json.createReader(idFile);
+        JsonObject fileJsonRep = reader.readObject();
+        JsonArray allFiles = fileJsonRep.getJsonArray("files");
+        for (JsonValue file:
+             allFiles) {
+            if (file instanceof JsonObject){
+                if (((JsonObject) file).get("inputLink").toString().equals(input) && ((JsonObject) file).get("analysisType").toString().equals(analysis)){
+                    allFiles.remove(file);
+                    allFiles.add(Json.createObjectBuilder()
+                            .add("inputLink", input)
+                            .add("analysisType", analysis)
+                            .add("output", output).build());
+                    break;
+                }
+            }
+        }
+        // Check if we have all the results
+        for (JsonValue file:
+                allFiles) {
+            if (file instanceof JsonObject) {
+                if (((JsonObject) file).get("output").toString().equals("")){
+                    finished = false;
+                    break;
+                }
+            }
+        }
+        this.createLibInfoFile(appMessageId, fileJsonRep);
+        return finished;
+    }
+
+    @Override
     public void createLibInfoFile(String libName, Object libInfo) {
         if (libInfo instanceof JsonObject) {
             PutObjectRequest putObjectRequest = PutObjectRequest
                     .builder()
                     .bucket(this.bucketName)
-                    .key(libName + "/" + id_file_name)
+                    .key(libName + "/" + idFileName)
                     .build();
             s3.putObject(putObjectRequest,
                     RequestBody.fromBytes(libInfo.toString().getBytes(StandardCharsets.UTF_8)));
@@ -46,15 +84,13 @@ public class S3Storage implements DataStorageInterface {
     @Override
     public int getFilesAmountInLib(String libName) {
         try {
-            ListObjectsRequest listObjects = ListObjectsRequest
-                    .builder()
-                    .bucket(bucketName)
-                    .prefix(libName)
-                    .delimiter("/")
-                    .build();
-
-            ListObjectsResponse res = this.s3.listObjects(listObjects);
-            return res.contents().size()-1;
+            int sum = 0;
+            ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).prefix(libName).build();
+            ListObjectsV2Iterable response = this.s3.listObjectsV2Paginator(request);
+            for (ListObjectsV2Response page : response) {
+                sum += page.contents().size();
+            }
+            return sum;
 
         } catch (S3Exception e) {
             System.err.println(e.awsErrorDetails().errorMessage());

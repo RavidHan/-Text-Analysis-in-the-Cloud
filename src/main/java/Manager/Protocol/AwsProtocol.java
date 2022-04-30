@@ -17,10 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AwsProtocol extends Protocol<Request>{
 
@@ -59,15 +56,17 @@ public class AwsProtocol extends Protocol<Request>{
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         return () -> {
             String appMessageId = req.getData()[0];
-            if (this.dataStorage.getFilesAmountInLib(appMessageId) == appMessagesAmountMap.get(appMessageId)){
-                ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
-                managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
-                try {
-                    this.appConnection.sendMessage(managerToAppRequest);
-                } catch (RequestUnknownException e) {
-                    e.printStackTrace();
+            if (appMessagesAmountMap.containsKey(appMessageId)){
+                if (this.dataStorage.insertResult(appMessageId, req.getData()[1], req.getData()[2], req.getData()[3])) {
+                    ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
+                    managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
+                    try {
+                        this.appConnection.sendMessage(managerToAppRequest);
+                    } catch (RequestUnknownException e) {
+                        e.printStackTrace();
+                    }
+                    appMessagesAmountMap.remove(appMessageId);
                 }
-                appMessagesAmountMap.remove(appMessageId);
             }
         };
     }
@@ -92,14 +91,14 @@ public class AwsProtocol extends Protocol<Request>{
                             // TODO ERROR MESSAGE
                             return;
                         }
-                        managerToWorkerRequest.setData(new Pair<>(analysisTypeEnum, strings[1]));
+                        managerToWorkerRequest.setData(new AbstractMap.SimpleEntry<>(analysisTypeEnum, strings[1]));
                         managerToWorkerRequest.setAppMessageId(req.getId());
                         managerToWorkerRequests.add(managerToWorkerRequest);
                         System.out.println("added request");
                         String messageId = this.workersConnection.sendMessage(managerToWorkerRequest);
                         System.out.println("send message to worker");
                         dataArray.add(Json.createObjectBuilder()
-                                        .add("workerMessageId", messageId)
+                                        .add("output", "")
                                         .add("analysisType", managerToWorkerRequest.getData().getKey().toString())
                                         .add("inputLink", managerToWorkerRequest.getData().getValue())
                                         .build());

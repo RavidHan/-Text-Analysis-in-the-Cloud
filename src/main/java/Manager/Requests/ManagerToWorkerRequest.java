@@ -1,8 +1,8 @@
 package Manager.Requests;
 
-import javafx.util.Pair;
+import java.util.Map;
 
-public class ManagerToWorkerRequest extends Request<Pair<AnalysisType.AnalysisTypeEnum, String>> {
+public class ManagerToWorkerRequest extends Request<Map.Entry<AnalysisType.AnalysisTypeEnum, String>> {
 
     private String appMessageId;
 

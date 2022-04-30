@@ -8,4 +8,6 @@ public interface DataStorageInterface {
     String getLibUrl(String libName);
     String getLibOfFileFromUrl(String toString);
     InputStream getFile(String location);
+    // returns true if finished
+    boolean insertResult(String appMessageId, String input, String analysis, String output);
 }

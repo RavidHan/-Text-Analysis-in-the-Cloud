@@ -6,7 +6,6 @@ import Manager.Connection.WorkersEncoderDecoder;
 import Manager.Job.S3Storage;
 import Manager.Job.WorkerExecutor;
 import Manager.Protocol.AwsProtocol;
-import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
