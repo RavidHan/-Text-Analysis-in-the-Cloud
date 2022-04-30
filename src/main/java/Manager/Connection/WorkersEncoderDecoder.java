@@ -4,7 +4,9 @@ import Manager.Requests.*;
 import javafx.util.Pair;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType.AnalysisTypeEnum, String>, String> {
+import java.util.regex.Pattern;
+
+public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType.AnalysisTypeEnum, String>, String[]> {
 
     @Override
     public String encode(Request<Pair<AnalysisType.AnalysisTypeEnum, String>> request) throws RequestUnknownException {
@@ -16,13 +18,14 @@ public class WorkersEncoderDecoder extends EncoderDecoder<Pair<AnalysisType.Anal
     }
 
     @Override
-    public Request<String> decode(Message message) throws RequestUnknownException {
-        String[] strings = message.body().split(" ");
-        if (strings.length != 1){
+    public Request<String[]> decode(Message message) throws RequestUnknownException {
+        // 124 is ascii value of |
+        String[] strings = message.body().split(Pattern.quote("|"));
+        if (strings.length != 4){
             throw new RequestUnknownException();
         }
         WorkerToManagerRequest request = new WorkerToManagerRequest();
-        request.setData(strings[0]);
+        request.setData(strings);
         return request;
     }
 

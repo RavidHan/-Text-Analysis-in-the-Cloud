@@ -58,7 +58,7 @@ public class AwsProtocol extends Protocol<Request>{
 
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         return () -> {
-            String appMessageId = dataStorage.getLibOfFileFromUrl(req.getData());
+            String appMessageId = req.getData()[0];
             if (this.dataStorage.getFilesAmountInLib(appMessageId) == appMessagesAmountMap.get(appMessageId)){
                 ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
                 managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
@@ -77,7 +77,6 @@ public class AwsProtocol extends Protocol<Request>{
             try {
                 List<ManagerToWorkerRequest> managerToWorkerRequests = new LinkedList<>();
                 JsonArrayBuilder dataArray = Json.createArrayBuilder();
-                JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray);
 
                 // read text returned by server
                 InputStream inputStream = dataStorage.getFile(req.getData());
@@ -102,11 +101,13 @@ public class AwsProtocol extends Protocol<Request>{
                         dataArray.add(Json.createObjectBuilder()
                                         .add("workerMessageId", messageId)
                                         .add("analysisType", managerToWorkerRequest.getData().getKey().toString())
-                                        .add("inputLink", managerToWorkerRequest.getData().getValue()));
+                                        .add("inputLink", managerToWorkerRequest.getData().getValue())
+                                        .build());
                         System.out.println("added message to json");
                     }
                 }
                 System.out.println("finished breakimg txt file");
+                JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray);
                 this.dataStorage.createLibInfoFile(req.getId(), s3LibData.build());
                 appMessagesAmountMap.put(req.getId(), managerToWorkerRequests.size());
                 reader.close();

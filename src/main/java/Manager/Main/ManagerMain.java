@@ -2,11 +2,13 @@ package Manager.Main;
 
 import Manager.Connection.ApplicationEncoderDecoder;
 import Manager.Connection.SQSConnectionHandler;
+import Manager.Connection.WorkersEncoderDecoder;
 import Manager.Job.S3Storage;
 import Manager.Job.WorkerExecutor;
 import Manager.Protocol.AwsProtocol;
 import SQS.SQSClass;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class ManagerMain {
@@ -30,6 +32,9 @@ public class ManagerMain {
         SqsClient sqsClient = SqsClient.builder()
                 .region(Region.US_WEST_2)
                 .build();
+        S3Client s3Client = S3Client.builder()
+                .region(Region.US_WEST_2)
+                .build();
         SQSConnectionHandler appSQSConnectionHandler = new SQSConnectionHandler(
                 new ApplicationEncoderDecoder(),
                 requestSelector,
@@ -37,13 +42,13 @@ public class ManagerMain {
                 getAppMessagesName,
                 sqsClient);
         SQSConnectionHandler workerSQSConnectionHandler = new SQSConnectionHandler(
-                new ApplicationEncoderDecoder(),
+                new WorkersEncoderDecoder(),
                 requestSelector,
                 sendWorkerMessagesSQSName,
                 getWorkerMessagesName,
                 sqsClient);
         WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker, "diamlior321");
-        S3Storage s3Storage = new S3Storage("thecoolbucketthatismine");
+        S3Storage s3Storage = new S3Storage("thecoolbucketthatismine", s3Client);
         Manager manager = new Manager(
                 requestSelector,
                 () -> new AwsProtocol(appSQSConnectionHandler, workerSQSConnectionHandler, workerExecutor, s3Storage),

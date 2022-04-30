@@ -19,7 +19,8 @@ public class S3Storage implements DataStorageInterface {
     private S3Client s3;
     private static final String id_file_name= "ID-INFO.json";
 
-    public S3Storage(String bucketName) {
+    public S3Storage(String bucketName, S3Client s3) {
+        this.s3 = s3;
         this.bucketName = bucketName;
     }
 
