@@ -1,10 +1,9 @@
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,6 +43,16 @@ public class S3Helper {
         System.out.println("Tag information: "+result);
     }
 
+    public static int getFilesNum(String bucketName, String prefix){
+        int sum = 0;
+        S3Client client = S3Client.builder().region(Region.US_WEST_2).build();
+        ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
+        ListObjectsV2Iterable response = client.listObjectsV2Paginator(request);
+        for (ListObjectsV2Response page : response) {
+            sum += page.contents().size();
+        }
+        return sum;
+    }
 
     // snippet-start:[s3.java2.s3_object_upload.main]
     public static String putS3Object(String bucketName,
@@ -83,6 +92,26 @@ public class S3Helper {
         return "";
     }
 
+    public static boolean doesObjectExists(String bucketName,
+                                           String objectKey){
+        Region region = Region.US_WEST_2;
+        S3Client s3 = S3Client.builder()
+                .region(region)
+                .build();
+        try {
+            HeadObjectRequest objectRequest = HeadObjectRequest.builder()
+                    .key(objectKey)
+                    .bucket(bucketName)
+                    .build();
+
+            HeadObjectResponse objectHead = s3.headObject(objectRequest);
+            String type = objectHead.contentType();
+            return true;
+        } catch (S3Exception e) {
+            return false;
+        }
+
+    }
     // Return a byte array
     private static byte[] getObjectFile(String filePath) {
 
