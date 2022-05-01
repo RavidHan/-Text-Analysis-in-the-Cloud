@@ -37,26 +37,31 @@ public class S3Storage implements DataStorageInterface {
     @Override
     public boolean insertResult(String appMessageId, String input, String analysis, String output) {
         boolean finished = true;
-        InputStream idFile = this.getFile(appMessageId + "\\" + idFileName);
+        InputStream idFile = this.getFile(appMessageId + "/" + idFileName);
         JsonReader reader = Json.createReader(idFile);
         JsonObject fileJsonRep = reader.readObject();
-        JsonArray allFiles = fileJsonRep.getJsonArray("files");
+        JsonArray oldFiles = fileJsonRep.getJsonArray("files");
+        JsonArrayBuilder newFiles = Json.createArrayBuilder();
         for (JsonValue file:
-             allFiles) {
+             oldFiles) {
             if (file instanceof JsonObject){
-                if (((JsonObject) file).get("inputLink").toString().equals(input) && ((JsonObject) file).get("analysisType").toString().equals(analysis)){
-                    allFiles.remove(file);
-                    allFiles.add(Json.createObjectBuilder()
+                if (((JsonObject) file).get("inputLink") instanceof JsonString
+                    && ((JsonString)((JsonObject) file).get("inputLink")).getString().equals(input)
+                    && ((JsonObject) file).get("analysisType") instanceof JsonString
+                    && ((JsonString)((JsonObject) file).get("analysisType")).getString().equals(analysis)){
+                    newFiles.add(Json.createObjectBuilder()
                             .add("inputLink", input)
                             .add("analysisType", analysis)
                             .add("output", output).build());
-                    break;
+                    continue;
                 }
             }
+            newFiles.add(file);
         }
         // Check if we have all the results
+        JsonArray finishedNewFiles = newFiles.build();
         for (JsonValue file:
-                allFiles) {
+                finishedNewFiles) {
             if (file instanceof JsonObject) {
                 if (((JsonObject) file).get("output").toString().equals("")){
                     finished = false;
@@ -64,7 +69,7 @@ public class S3Storage implements DataStorageInterface {
                 }
             }
         }
-        this.createLibInfoFile(appMessageId, fileJsonRep);
+        this.createLibInfoFile(appMessageId, Json.createObjectBuilder().add("files", finishedNewFiles).build());
         return finished;
     }
 

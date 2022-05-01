@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class ManagerMain {
-    static String bucketName = "diamlior321";
+    static String bucketName = "thecoolbucketthatismine";
     public static void main(String[] args) {
 
         /**if (args.length < 1) {

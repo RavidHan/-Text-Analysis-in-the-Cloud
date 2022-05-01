@@ -3,25 +3,22 @@ package Manager.Protocol;
 import Manager.Connection.ConnectionHandler;
 import Manager.Job.DataStorageInterface;
 import Manager.Job.JobExecutor;
-import Manager.Job.S3Storage;
 import Manager.Requests.*;
-import javafx.util.Pair;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class AwsProtocol extends Protocol<Request>{
 
-    private static Map<String, Integer> appMessagesAmountMap = new HashMap<>();
+    private static Map<String, Lock> appMessagesLocksMap = new HashMap<>();
     private boolean shouldTerminate = false;
     private ConnectionHandler workersConnection;
     private ConnectionHandler appConnection;
@@ -56,17 +53,23 @@ public class AwsProtocol extends Protocol<Request>{
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         return () -> {
             String appMessageId = req.getData()[0];
-            if (appMessagesAmountMap.containsKey(appMessageId)){
-                if (this.dataStorage.insertResult(appMessageId, req.getData()[1], req.getData()[2], req.getData()[3])) {
-                    ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
-                    managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
-                    try {
-                        this.appConnection.sendMessage(managerToAppRequest);
-                    } catch (RequestUnknownException e) {
-                        e.printStackTrace();
+            if (appMessagesLocksMap.containsKey(appMessageId)){
+                Lock currLock = appMessagesLocksMap.get(appMessageId);
+                    currLock.lock();
+                    if (this.dataStorage.insertResult(appMessageId, req.getData()[1], req.getData()[2], req.getData()[3])) {
+                        currLock.unlock();
+                        ManagerToAppRequest managerToAppRequest = new ManagerToAppRequest();
+                        managerToAppRequest.setData(dataStorage.getLibUrl(appMessageId));
+                        try {
+                            this.appConnection.sendMessage(managerToAppRequest);
+                        } catch (RequestUnknownException e) {
+                            e.printStackTrace();
+                        }
+                        appMessagesLocksMap.remove(appMessageId);
+                    } else {
+                        currLock.unlock();
                     }
-                    appMessagesAmountMap.remove(appMessageId);
-                }
+
             }
         };
     }
@@ -106,9 +109,9 @@ public class AwsProtocol extends Protocol<Request>{
                     }
                 }
                 System.out.println("finished breakimg txt file");
-                JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray);
+                JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray.build());
                 this.dataStorage.createLibInfoFile(req.getId(), s3LibData.build());
-                appMessagesAmountMap.put(req.getId(), managerToWorkerRequests.size());
+                appMessagesLocksMap.put(req.getId(), new ReentrantLock());
                 reader.close();
                 jobExecutor.createWorkers();
             } catch (MalformedURLException e) {
@@ -120,6 +123,6 @@ public class AwsProtocol extends Protocol<Request>{
     }
 
     public boolean shouldTerminate(){
-        return (this.shouldTerminate && appMessagesAmountMap.isEmpty());
+        return (this.shouldTerminate && appMessagesLocksMap.isEmpty());
     }
 }
