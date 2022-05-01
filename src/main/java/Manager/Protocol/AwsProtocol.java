@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AwsProtocol extends Protocol<Request>{
 
     private static Map<String, Lock> appMessagesLocksMap = new HashMap<>();
-    private boolean shouldTerminate = false;
+    private static boolean shouldTerminate = false;
     private ConnectionHandler workersConnection;
     private ConnectionHandler appConnection;
     private JobExecutor jobExecutor;
@@ -36,9 +36,9 @@ public class AwsProtocol extends Protocol<Request>{
     public Runnable process(Request req) throws RequestUnknownException, NotifyFinishedException {
         if (req instanceof AppToManagerRequest){
             if (((AppToManagerRequest) req).isTermination()){
-                this.shouldTerminate = true;
-                this.workersConnection.terminate();
-                this.appConnection.terminate();
+                shouldTerminate = true;
+//                this.workersConnection.setTermination();
+//                this.appConnection.setTermination();
                 throw new NotifyFinishedException();
             }
             return this.processApplicationRequest((AppToManagerRequest) req);
@@ -123,6 +123,6 @@ public class AwsProtocol extends Protocol<Request>{
     }
 
     public boolean shouldTerminate(){
-        return (this.shouldTerminate && appMessagesLocksMap.isEmpty());
+        return (shouldTerminate && appMessagesLocksMap.isEmpty());
     }
 }
