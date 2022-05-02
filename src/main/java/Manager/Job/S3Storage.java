@@ -63,7 +63,8 @@ public class S3Storage implements DataStorageInterface {
         for (JsonValue file:
                 finishedNewFiles) {
             if (file instanceof JsonObject) {
-                if (((JsonObject) file).get("output").toString().equals("")){
+                if (((JsonObject) file).get("output") instanceof JsonString
+                    && ((JsonString)((JsonObject) file).get("output")).getString().equals("")){
                     finished = false;
                     break;
                 }
