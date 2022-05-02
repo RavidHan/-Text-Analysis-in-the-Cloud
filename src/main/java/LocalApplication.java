@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.ec2.model.Reservation;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 public class LocalApplication {
     static String managerName = "Manager_EC2";
-    static String bucketName = "diamlior321";
+    static String bucketName = "";
 
     static class ResultEntry{
         public String job;
@@ -39,9 +40,11 @@ public class LocalApplication {
         }
     }
     public static void main(String[] args) throws InterruptedException, IOException {
+        System.out.printf("Note: The credentials are taken from %s, make sure it is the right path.\n", ManagerCreator.credentialsPath);
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(System.in));
-
+        System.out.print("Enter bucket name: ");
+        bucketName = reader.readLine();
         System.out.print("Enter path to input file: ");
         String filePath = reader.readLine();
         createManagerIfNeeded();
@@ -62,7 +65,7 @@ public class LocalApplication {
             if(!msgs.isEmpty())
                 for(Message msg : msgs) {
                     String s = msg.body();
-                    if (s.equals(id)) {
+                    if (s.contains(id)) {
                         ResultEntry[] resultsArray = parseResults(id);
                         HTMLCreator.createHTML(resultsArray, id);
                     }
@@ -78,8 +81,16 @@ public class LocalApplication {
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
         if(json.get("files").toString() == "[]")
             return null;
-
-        return new ResultEntry[2];
+        JsonArray files = (JsonArray) json.get("files");
+        ResultEntry[] results = new ResultEntry[files.size()];
+        for(int i = 0; i < files.size(); i++){
+            JsonObject temp = (JsonObject) files.get(i);
+            String output = temp.getString("output");
+            String type = temp.getString("analysisType");
+            String input = temp.getString("inputLink");
+            results[i] = new ResultEntry(type, input, output, false);
+        }
+        return results;
     }
 
     public static boolean isManagerOn( Ec2Client ec2){
@@ -113,7 +124,7 @@ public class LocalApplication {
             return;
         }
         System.out.println("Creating a Manager EC2 instance. This can take a while as we need to wait for the instance to start.");
-        ManagerCreator.createManagerInstance(managerName);
+        ManagerCreator.createManagerInstance(managerName, bucketName);
     }
     private static String waitForQueue(SqsClient sqsClient, String queueName) throws InterruptedException {
         try {
@@ -142,8 +153,10 @@ public class LocalApplication {
         else{
             int counter = 0;
             String tempFileName = String.format("%s%d", fileName, counter);
-            while(!S3Helper.doesObjectExists(bucketName, fileName))
+            while(S3Helper.doesObjectExists(bucketName, tempFileName)) {
                 counter++;
+                tempFileName = String.format("%s%d", fileName, counter);
+            }
             S3Helper.putS3Object(bucketName, tempFileName, filePath);
             System.out.printf("Uploading %s succeeded under the name: %s!\n", fileName, tempFileName);
             return tempFileName;

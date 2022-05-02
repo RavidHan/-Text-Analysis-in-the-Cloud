@@ -7,7 +7,7 @@ import java.util.List;
 public class StanfordParser {
     public static String parse(String inputPath, String outputPath, ParsingJob job) throws IOException {
         try {
-            LexicalizedParser p = LexicalizedParser.loadModel("src/englishPCFG.ser.gz");
+            LexicalizedParser p = LexicalizedParser.loadModel("englishPCFG.ser.gz");
             FileInputStream fstream = new FileInputStream(inputPath);
             DataInputStream in = new DataInputStream(fstream); // Get the object of DataInputStream
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -27,7 +27,6 @@ public class StanfordParser {
 
             System.out.println("Starting parsing: " + jobType);
             while ((strLine = br.readLine()) != null) {
-                System.out.println("Parsing: " + strLine);
                 // We read each line independently
                 sr = new StringReader(strLine);
                 tkzr = PTBTokenizer.newPTBTokenizer(sr);

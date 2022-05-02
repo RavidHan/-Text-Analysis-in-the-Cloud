@@ -9,7 +9,7 @@ import java.util.Base64;
 
 
 public class ManagerCreator {
-    static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
+    public static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
 
     public static void main(String[] args) throws InterruptedException, IOException {
     }
@@ -21,17 +21,23 @@ public class ManagerCreator {
                 .build();
     }
 
-    private static String getECuserData() throws IOException {
+    private static String getECuserData(String bucketName) throws IOException {
+        // Let's not touch this function, it is super sensitive :(
+
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
         userData = userData + "cd /home/ec2-user\n";
+        userData = userData + "pwd\n";
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
+        userData = userData + "pwd\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
+        userData = userData + "pwd\n";
+        userData = userData + "cp -rf ~/.aws .\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
-        userData = userData + "sudo java -cp Text-Analysis.jar Manager.Main.ManagerMain\n";
+        userData = userData + "sudo java -cp Text-Analysis.jar Manager.Main.ManagerMain " + bucketName + "\n";
         String base64UserData = null;
         try {
             base64UserData = new String( Base64.getEncoder().encode(userData.getBytes("UTF-8")), "UTF-8" );
@@ -94,14 +100,13 @@ public class ManagerCreator {
         }
     }
 
-    public static String createManagerInstance(String name) throws IOException {
-
+    public static String createManagerInstance(String name, String bucketName) throws IOException {
         String amiId = "ami-0b36cd6786bcfe120";
         Ec2Client ec2 = GetEc2();
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
                 .instanceType(InstanceType.T2_MICRO)
-                .userData(getECuserData())
+                .userData(getECuserData(bucketName))
                 .maxCount(1)
                 .minCount(1)
                 .securityGroups("launch-wizard-2")
