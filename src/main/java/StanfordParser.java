@@ -27,7 +27,6 @@ public class StanfordParser {
 
             System.out.println("Starting parsing: " + jobType);
             while ((strLine = br.readLine()) != null) {
-                System.out.println("Parsing: " + strLine);
                 // We read each line independently
                 sr = new StringReader(strLine);
                 tkzr = PTBTokenizer.newPTBTokenizer(sr);

@@ -11,14 +11,15 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 public class ManagerMain {
-    static String bucketName = "thecoolbucketthatismine";
+    static String bucketName = "";
     public static void main(String[] args) {
 
-        /**if (args.length < 1) {
+        if (args.length < 1) {
          System.out.println("Missing arguments");
          return;
-         }*/
+         }
 
+        bucketName = args[0];
         RequestSelector requestSelector = new RequestSelector();
         int messagesPerWorker = 10;
         String sendAppMessagesSQSName = "sendAppMessagesSQS";
@@ -46,7 +47,7 @@ public class ManagerMain {
                 sendWorkerMessagesSQSName,
                 getWorkerMessagesName,
                 sqsClient);
-        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker, "diamlior321");
+        WorkerExecutor workerExecutor = new WorkerExecutor(sendWorkerMessagesSQSName, getWorkerMessagesName, sqsClient, messagesPerWorker, bucketName);
         S3Storage s3Storage = new S3Storage(bucketName, s3Client);
         Manager manager = new Manager(
                 requestSelector,

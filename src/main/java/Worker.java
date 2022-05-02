@@ -74,7 +74,7 @@ public class Worker {
             if(!msg.equals("")) {
                 Msg m = Msg.parseMsg(msg);
                 String answer = process(m);
-                sendResult(answer, sqsClient);
+                sendResult(answer, sqsClient, m);
                 deleteMessage(sqsClient);
                 deleteAllFiles(m);
             }
@@ -97,12 +97,12 @@ public class Worker {
         sqsClient.deleteMessage(deleteMessageRequest);
     }
 
-    private static void sendResult(String resultURL, SqsClient sqsClient){
+    private static void sendResult(String resultURL, SqsClient sqsClient, Msg m){
         // Sends the result URL to the output SQS
-
+        String returnMsg = String.format("%s|%s|%s|%s", m.container, m.inputLink, m.job.toString(), resultURL);
         SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                 .queueUrl(outputSQS)
-                .messageBody(resultURL).build();
+                .messageBody(returnMsg).build();
         sqsClient.sendMessage(sendMessageRequest);
         System.out.printf("Result was sent to: %s\n", resultURL);
     }
@@ -154,6 +154,7 @@ public class Worker {
         }
         System.out.printf("Processing the message into file: %s\n", resultPath);
         String result = StanfordParser.parse(file_path, resultPath, m.job);
+        System.out.println("Processing Finished!");
         String ObjectKey = String.format("%s/%s", m.container, messageId);
         if(result.equals("1"))
             return S3Helper.putS3Object(Worker.bucketName, ObjectKey, resultPath);

@@ -24,7 +24,6 @@ public class WorkerExecutor implements JobExecutor {
             .key("Name")
             .value("Worker")
             .build();
-    private static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
 
     public WorkerExecutor(String inputSQS, String outputSQS, SqsClient sqsClient, int messagesPerWorker, String bucketName) {
         this.bucketName = bucketName;
@@ -185,7 +184,8 @@ public class WorkerExecutor implements JobExecutor {
     }
 
     private String getCredentials() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(credentialsPath));
+        String credentialPath = "/home/ec2-user/.aws/credentials";
+        BufferedReader br = new BufferedReader(new FileReader(credentialPath));
         try {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();
