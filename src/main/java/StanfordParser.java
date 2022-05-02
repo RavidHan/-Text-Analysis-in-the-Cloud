@@ -7,7 +7,7 @@ import java.util.List;
 public class StanfordParser {
     public static String parse(String inputPath, String outputPath, ParsingJob job) throws IOException {
         try {
-            LexicalizedParser p = LexicalizedParser.loadModel("src/englishPCFG.ser.gz");
+            LexicalizedParser p = LexicalizedParser.loadModel("englishPCFG.ser.gz");
             FileInputStream fstream = new FileInputStream(inputPath);
             DataInputStream in = new DataInputStream(fstream); // Get the object of DataInputStream
             BufferedReader br = new BufferedReader(new InputStreamReader(in));

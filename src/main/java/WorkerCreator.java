@@ -42,7 +42,7 @@ public class WorkerCreator {
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
-        userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
+        userData = userData + String.format("sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n");
         userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, bucketName);
         String base64UserData = null;
         try {

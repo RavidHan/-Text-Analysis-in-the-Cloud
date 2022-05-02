@@ -9,7 +9,7 @@ import java.util.Base64;
 
 
 public class ManagerCreator {
-    static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
+    public static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
 
     public static void main(String[] args) throws InterruptedException, IOException {
     }
@@ -22,13 +22,19 @@ public class ManagerCreator {
     }
 
     private static String getECuserData() throws IOException {
+        // Let's not touch this function, it is super sensitive :(
+
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
         userData = userData + "cd /home/ec2-user\n";
+        userData = userData + "pwd\n";
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
+        userData = userData + "pwd\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
+        userData = userData + "pwd\n";
+        userData = userData + "cp -rf ~/.aws .\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
         userData = userData + "sudo java -cp Text-Analysis.jar Manager.Main.ManagerMain\n";

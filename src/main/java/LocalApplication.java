@@ -39,6 +39,7 @@ public class LocalApplication {
         }
     }
     public static void main(String[] args) throws InterruptedException, IOException {
+        System.out.printf("Note: The credentials are taken from %s, make sure it is the right path.\n", ManagerCreator.credentialsPath);
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(System.in));
 
@@ -142,8 +143,10 @@ public class LocalApplication {
         else{
             int counter = 0;
             String tempFileName = String.format("%s%d", fileName, counter);
-            while(!S3Helper.doesObjectExists(bucketName, fileName))
+            while(S3Helper.doesObjectExists(bucketName, tempFileName)) {
                 counter++;
+                tempFileName = String.format("%s%d", fileName, counter);
+            }
             S3Helper.putS3Object(bucketName, tempFileName, filePath);
             System.out.printf("Uploading %s succeeded under the name: %s!\n", fileName, tempFileName);
             return tempFileName;

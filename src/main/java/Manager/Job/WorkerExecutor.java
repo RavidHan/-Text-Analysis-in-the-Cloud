@@ -44,14 +44,22 @@ public class WorkerExecutor implements JobExecutor {
     }
 
     private String getECuserData(String inputSQS, String outputSQS) throws IOException {
+        // Let's not touch this function, it is super sensitive :(
+
         String userData = "";
         userData = userData + "#!/bin/bash" + "\n";
+        userData = userData + "cd /home/ec2-user\n";
+        userData = userData + "pwd\n";
         userData = userData + "mkdir ~/.aws\n";
         userData = userData + "cd ~/.aws\n";
+        userData = userData + "pwd\n";
         userData = userData + String.format("echo \"%s\" > credentials\n", getCredentials());
         userData = userData + "cd -\n";
+        userData = userData + "pwd\n";
+        userData = userData + "cp -rf ~/.aws .\n";
         userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
+        userData = userData + "sudo aws s3 cp s3://diamlior321/englishPCFG.ser.gz englishPCFG.ser.gz\n";
         userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, this.bucketName);
         String base64UserData = null;
         try {
