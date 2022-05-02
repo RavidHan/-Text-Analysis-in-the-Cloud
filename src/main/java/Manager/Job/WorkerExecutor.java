@@ -158,20 +158,20 @@ public class WorkerExecutor implements JobExecutor {
             String nextToken = null;
 
             do {
-                Filter filter = Filter.builder()
-                        .values("running")
-                        .build();
+//                Filter filter = Filter.builder()
+//                        .values("running")
+//                        .build();
 
                 DescribeInstancesRequest request = DescribeInstancesRequest.builder()
-                        .filters(filter)
                         .build();
 
                 DescribeInstancesResponse response = ec2.describeInstances(request);
 
                 for (Reservation reservation : response.reservations()) {
                     for (Instance instance : reservation.instances()) {
-                        if (instance.tags().contains("Worker")){
-                            this.deleteJobExecutor(instance.instanceId());
+                        for(Tag t : instance.tags())
+                            if(t.key().equals("Name") && t.value().equals("Worker")) {
+                                this.deleteJobExecutor(instance.instanceId());
                         }
                     }
                 }

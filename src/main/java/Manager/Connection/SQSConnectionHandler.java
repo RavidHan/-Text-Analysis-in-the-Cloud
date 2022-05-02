@@ -4,6 +4,7 @@ import Manager.Main.RequestSelector;
 import Manager.Requests.Request;
 import Manager.Requests.RequestUnknownException;
 import SQS.SQSClass;
+import software.amazon.awssdk.core.exception.SdkInterruptedException;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 
@@ -32,6 +33,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
         // Create queue if not exist
         if (queueUrl == null) {
             queueUrl = SQSClass.createQueue(this.sqsClient, queueName);
+
         }
         return queueUrl;
     }
@@ -48,6 +50,11 @@ public class SQSConnectionHandler extends ConnectionHandler {
     }
 
     @Override
+    public void setTermination() {
+        this.active = false;
+    }
+
+    @Override
     public void listener() {
             while (true) {
                 if (Thread.interrupted()){
@@ -56,7 +63,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
                 }
                 List<Message> appMessages = SQSClass.receiveOneMessage(this.sqsClient, this.getMessageUrl);
                 if (appMessages == null){
-                    System.err.println("Error with receiving messages in SQS: " + this.getMessageUrl);
+//                    System.err.println("Error with receiving messages in SQS: " + this.getMessageUrl);
                     return;
                 }
                 if (appMessages.isEmpty()){
@@ -69,14 +76,13 @@ public class SQSConnectionHandler extends ConnectionHandler {
                     continue;
                 }
                 if (req != null) {
-                    this.requestSelector.putMessage(req);
                     SQSClass.deleteMessages(this.sqsClient, this.getMessageUrl, appMessages);
+                    this.requestSelector.putMessage(req);
                 }
             }
     }
 
-    @Override
-    public void terminate(){
+    private void terminate(){
         this.active = false;
         SQSClass.deleteQueue(sqsClient, this.sendMessageUrl);
         SQSClass.deleteQueue(sqsClient, this.getMessageUrl);

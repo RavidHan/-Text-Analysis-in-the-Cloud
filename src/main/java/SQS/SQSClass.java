@@ -1,5 +1,6 @@
 package SQS;
 
+import software.amazon.awssdk.core.exception.AbortedException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
@@ -225,10 +226,12 @@ public class SQSClass {
                     .build();
             List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
             return messages;
-        } catch (SqsException e) {
-            System.err.println(e.awsErrorDetails().errorMessage());
+        } catch (AbortedException e){
+            return null;
+        }catch (SqsException e) {
+            e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     // snippet-start:[sqs.java2.sqs_example.delete_queue]
