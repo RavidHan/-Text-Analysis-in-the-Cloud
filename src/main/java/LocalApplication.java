@@ -68,6 +68,8 @@ public class LocalApplication {
                     if (s.contains(id)) {
                         ResultEntry[] resultsArray = parseResults(id);
                         HTMLCreator.createHTML(resultsArray, id);
+                        SQSClass.deleteMessage(sqsClient, inputURL, msg);
+                        return;
                     }
                 }
             TimeUnit.SECONDS.sleep(1);
@@ -76,7 +78,7 @@ public class LocalApplication {
     }
 
     public static ResultEntry[] parseResults(String id){
-        // TODO: finish parsing function
+
         String data = S3Helper.getFileData(id + "/ID-INFO.json");
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
         if(json.get("files").toString() == "[]")
