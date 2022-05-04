@@ -94,7 +94,9 @@ public class S3Helper {
                     .bucket(bucketName)
                     .key(objectKey)
                     .metadata(metadata)
+                    .acl(ObjectCannedACL.PUBLIC_READ)
                     .build();
+
 
             s3.putObject(putOb, RequestBody.fromBytes(getObjectFile(objectPath)));
             s3.close();
