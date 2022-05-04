@@ -7,10 +7,10 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class WorkersEncoderDecoder extends EncoderDecoder<Map.Entry<AnalysisType.AnalysisTypeEnum, String>, String[]> {
+public class WorkersEncoderDecoder extends EncoderDecoder<Map.Entry<String, String>, String[]> {
 
     @Override
-    public String encode(Request<Map.Entry<AnalysisType.AnalysisTypeEnum, String>> request) throws RequestUnknownException {
+    public String encode(Request<Map.Entry<String, String>> request) throws RequestUnknownException {
         if (!(request instanceof ManagerToWorkerRequest)){
             throw new RequestUnknownException();
         }

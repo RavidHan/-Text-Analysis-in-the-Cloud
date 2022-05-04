@@ -37,8 +37,6 @@ public class AwsProtocol extends Protocol<Request>{
         if (req instanceof AppToManagerRequest){
             if (((AppToManagerRequest) req).isTermination()){
                 shouldTerminate = true;
-//                this.workersConnection.setTermination();
-//                this.appConnection.setTermination();
                 throw new NotifyFinishedException();
             }
             return this.processApplicationRequest((AppToManagerRequest) req);
@@ -88,13 +86,7 @@ public class AwsProtocol extends Protocol<Request>{
                     String[] strings = line.split("\t");
                     if (strings.length == 2) {
                         ManagerToWorkerRequest managerToWorkerRequest = new ManagerToWorkerRequest();
-                        AnalysisType.AnalysisTypeEnum analysisTypeEnum = AnalysisType.getAnalysisType(strings[0]);
-                        System.out.println(analysisTypeEnum);
-                        if (analysisTypeEnum == null){
-                            // TODO ERROR MESSAGE
-                            return;
-                        }
-                        managerToWorkerRequest.setData(new AbstractMap.SimpleEntry<>(analysisTypeEnum, strings[1]));
+                        managerToWorkerRequest.setData(new AbstractMap.SimpleEntry<>(strings[0], strings[1]));
                         managerToWorkerRequest.setAppMessageId(req.getId());
                         managerToWorkerRequests.add(managerToWorkerRequest);
                         System.out.println("added request");

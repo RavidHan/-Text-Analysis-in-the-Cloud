@@ -2,7 +2,7 @@ package Manager.Requests;
 
 import java.util.Map;
 
-public class ManagerToWorkerRequest extends Request<Map.Entry<AnalysisType.AnalysisTypeEnum, String>> {
+public class ManagerToWorkerRequest extends Request<Map.Entry<String, String>> {
 
     private String appMessageId;
 
