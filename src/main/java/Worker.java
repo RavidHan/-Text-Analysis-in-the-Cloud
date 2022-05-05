@@ -76,7 +76,7 @@ public class Worker {
                 String answer = process(m);
                 sendResult(answer, sqsClient, m);
                 deleteMessage(sqsClient);
-                deleteAllFiles(m);
+                deleteAllFiles();
             }
             else{
                 TimeUnit.SECONDS.sleep(5);
@@ -84,9 +84,17 @@ public class Worker {
         }
     }
 
-    private static void deleteAllFiles(Msg m) throws IOException {
-        Runtime.getRuntime().exec(String.format("rm -rf %s_*", messageId));
-        System.out.printf("Deleting all files: rm -rf %s_*\n", messageId);
+    private static void deleteAllFiles(){
+        File resultFile = new File(messageId + "_result");
+        File inputFile = new File(messageId);
+        if(!resultFile.delete())
+            System.out.println("Failed deleting " + messageId + "_result");
+        else
+            System.out.println(messageId + "_result was deleted!");
+        if(!inputFile.delete())
+            System.out.println("Failed deleting " + messageId);
+        else
+            System.out.println(messageId + " was deleted!");
     }
 
     private static void deleteMessage(SqsClient sqsClient){

@@ -14,10 +14,7 @@ import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -45,8 +42,7 @@ public class LocalApplication {
                 new InputStreamReader(System.in));
         System.out.print("Enter bucket name: ");
         bucketName = reader.readLine();
-        System.out.print("Enter path to input file: ");
-        String filePath = reader.readLine();
+        String filePath = getFilePathOrTerminate(reader);
         createManagerIfNeeded();
         String fileKey = uploadFile(filePath, bucketName);
         SqsClient sqsClient = SqsClient.builder()
@@ -58,8 +54,11 @@ public class LocalApplication {
         System.out.println("Waiting for input SQS...");
         String inputURL = waitForQueue(sqsClient, "sendAppMessagesSQS");
         System.out.println("Input SQS is on!");
-        System.out.println(String.format("Sending %s to outputSQS\n", fileKey));
+        System.out.printf("Sending %s to outputSQS\n%n", fileKey);
         String id = SQSClass.sendMessageFromString(sqsClient, outputURL, fileKey);
+        if(fileKey.equals("terminate"))
+            return;
+
         while(true) {
             List<Message> msgs = SQSClass.receiveMessages(sqsClient, inputURL);
             if(!msgs.isEmpty())
@@ -77,11 +76,25 @@ public class LocalApplication {
 
     }
 
+    public static String getFilePathOrTerminate(BufferedReader reader) throws IOException {
+        String filePath = "";
+        boolean fileExists = false;
+        while(!fileExists) {
+            System.out.print("Enter path to input file (or 'terminate' to end the execution): ");
+            filePath = reader.readLine();
+            File f = new File(filePath);
+            fileExists = f.exists() || filePath.equals("terminate");
+            if(!fileExists)
+                System.out.println("File was not found!");
+        }
+        return filePath;
+    }
+
     public static ResultEntry[] parseResults(String id){
 
         String data = S3Helper.getFileData(id + "/ID-INFO.json");
         JsonObject json = Json.createReader(new StringReader(data)).readObject();
-        if(json.get("files").toString() == "[]")
+        if(json.get("files").toString().equals("[]"))
             return null;
         JsonArray files = (JsonArray) json.get("files");
         ResultEntry[] results = new ResultEntry[files.size()];
@@ -126,7 +139,18 @@ public class LocalApplication {
             return;
         }
         System.out.println("Creating a Manager EC2 instance. This can take a while as we need to wait for the instance to start.");
-        ManagerCreator.createManagerInstance(managerName, bucketName);
+        System.out.print("Please enter n (messagesPerWorker): ");
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in));
+        try{
+            int n = Integer.parseInt(reader.readLine());
+            ManagerCreator.createManagerInstance(managerName, bucketName, n);
+        }
+        catch (Exception e){
+            System.out.println("n must be an integer!");
+            System.exit(0);
+        }
+
     }
     private static String waitForQueue(SqsClient sqsClient, String queueName) throws InterruptedException {
         try {
@@ -143,9 +167,12 @@ public class LocalApplication {
     }
 
     private static String uploadFile(String filePath, String bucketName){
-        String[] s = filePath.split("/");
-        String fileName = s[s.length - 1];
+        if(filePath.equals("terminate"))
+            return filePath;
 
+        // Split path either by '/' or by '\'
+        String[] s = filePath.split("/|\\\\");
+        String fileName = s[s.length - 1];
 
         if(!S3Helper.doesObjectExists(bucketName, fileName)){
             S3Helper.putS3Object(bucketName, fileName, filePath);
