@@ -11,13 +11,14 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class ManagerMain {
     static String bucketName = "";
     public static void main(String[] args) throws InterruptedException {
 
-        if (args.length < 1) {
+        if (args.length < 2) {
          System.out.println("Missing arguments");
          return;
          }
@@ -79,6 +80,8 @@ public class ManagerMain {
             workerConnectionThread.interrupt();
             appConnectionThread.join();
             workerConnectionThread.join();
+            appSQSConnectionHandler.terminate();
+            workerSQSConnectionHandler.terminate();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
@@ -88,6 +91,11 @@ public class ManagerMain {
 
         System.out.println("Manager closed!");
 
-        // TODO (SHUTDOWN MANAGER? - self)
+        try {
+            Runtime.getRuntime().exec("sudo shutdown -h now");
+        } catch (IOException e) {
+            System.err.println("Could not execute shutdown command due to:\n");
+            e.printStackTrace();
+        }
     }
 }

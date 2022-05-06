@@ -109,6 +109,7 @@ public class ManagerCreator {
                 .userData(getECuserData(bucketName, n))
                 .maxCount(1)
                 .minCount(1)
+                .instanceInitiatedShutdownBehavior(ShutdownBehavior.TERMINATE)
                 .securityGroups("launch-wizard-1")
                 .build();
 

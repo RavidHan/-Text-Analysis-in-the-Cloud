@@ -17,7 +17,6 @@ public class SQSConnectionHandler extends ConnectionHandler {
     private String getMessageUrl;
     private SqsClient sqsClient;
     private RequestSelector requestSelector;
-    private boolean active;
 
     public SQSConnectionHandler(EncoderDecoder encoderDecoder, RequestSelector requestSelector, String sendMessageName, String getMessageName, SqsClient sqsClient) {
         this.encoderDecoder = encoderDecoder;
@@ -25,7 +24,6 @@ public class SQSConnectionHandler extends ConnectionHandler {
         this.sendMessageUrl = this.getQueueUrl(sendMessageName);
         this.getMessageUrl = this.getQueueUrl(getMessageName);
         this.requestSelector = requestSelector;
-        this.active = true;
     }
 
     private String getQueueUrl(String queueName) {
@@ -50,11 +48,6 @@ public class SQSConnectionHandler extends ConnectionHandler {
     }
 
     @Override
-    public void setTermination() {
-        this.active = false;
-    }
-
-    @Override
     public void listener() {
             while (true) {
                 if (Thread.interrupted()){
@@ -63,7 +56,6 @@ public class SQSConnectionHandler extends ConnectionHandler {
                 }
                 List<Message> appMessages = SQSClass.receiveOneMessage(this.sqsClient, this.getMessageUrl);
                 if (appMessages == null){
-//                    System.err.println("Error with receiving messages in SQS: " + this.getMessageUrl);
                     return;
                 }
                 if (appMessages.isEmpty()){
@@ -82,8 +74,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
             }
     }
 
-    private void terminate(){
-        this.active = false;
+    public void terminate(){
         SQSClass.deleteQueue(sqsClient, this.sendMessageUrl);
         SQSClass.deleteQueue(sqsClient, this.getMessageUrl);
     }

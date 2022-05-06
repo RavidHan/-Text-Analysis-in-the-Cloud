@@ -130,7 +130,7 @@ public class Worker {
         Worker.receiptHandle = messages.get(0).receiptHandle();
         String body = messages.get(0).body();
         System.out.printf("Received msg!\nBody: %s\n%n", body);
-        ChangeVisibility(sqsClient, receiptHandle, 3600);
+        ChangeVisibility(sqsClient, receiptHandle, 1800);
         return messages.get(0).body();
     }
 
