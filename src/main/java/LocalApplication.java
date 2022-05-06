@@ -43,8 +43,10 @@ public class LocalApplication {
         System.out.print("Enter bucket name: ");
         bucketName = reader.readLine();
         String filePath = getFilePathOrTerminate(reader);
-        createManagerIfNeeded();
         String fileKey = uploadFile(filePath, bucketName);
+
+
+        createManagerIfNeeded();
         SqsClient sqsClient = SqsClient.builder()
                 .region(Region.US_WEST_2)
                 .build();

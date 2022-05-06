@@ -12,10 +12,10 @@ enum ParsingJob {POS, CONSTITUENCY, DEPENDENCY}
 
 class Msg {
     public String container;
-    public ParsingJob job;
+    public String job;
     public String inputLink;
 
-    private Msg(String container, ParsingJob job, String inputLink){
+    private Msg(String container, String job, String inputLink){
         this.container = container;
         this.job = job;
         this.inputLink = inputLink;
@@ -30,21 +30,8 @@ class Msg {
         }
         String id = result[0];
 
-        ParsingJob job;
-        switch(result[1]){
-            case "POS":
-                job = ParsingJob.POS;
-                break;
-            case "CONSTITUENCY":
-                job = ParsingJob.CONSTITUENCY;
-                break;
-            case "DEPENDENCY":
-                job = ParsingJob.DEPENDENCY;
-                break;
-            default:
-                throw new Exception("Unknown parsing job: " + result[1]);
 
-        }
+        String job = result[1];
         String inputLink = result[2];
         return new Msg(id, job, inputLink);
     }
@@ -73,7 +60,11 @@ public class Worker {
             String msg = getMsg(sqsClient);
             if(!msg.equals("")) {
                 Msg m = Msg.parseMsg(msg);
-                String answer = process(m);
+                String answer;
+                if(m.job.equals("POS") || m.job.equals("DEPENDENCY") || m.job.equals("CONSTITUENCY"))
+                    answer = process(m);
+                else
+                    answer = "Parsing type is illegal!";
                 sendResult(answer, sqsClient, m);
                 deleteMessage(sqsClient);
                 deleteAllFiles();
@@ -85,12 +76,12 @@ public class Worker {
     }
 
     private static void deleteAllFiles(){
-        File resultFile = new File(messageId + "_result");
+        File resultFile = new File(messageId + "_result.txt");
         File inputFile = new File(messageId);
         if(!resultFile.delete())
-            System.out.println("Failed deleting " + messageId + "_result");
+            System.out.println("Failed deleting " + messageId + "_result.txt");
         else
-            System.out.println(messageId + "_result was deleted!");
+            System.out.println(messageId + "_result.txt was deleted!");
         if(!inputFile.delete())
             System.out.println("Failed deleting " + messageId);
         else
@@ -152,18 +143,25 @@ public class Worker {
     }
     private static String process(Msg m) throws IOException {
         // Processes the message from the manager and returns the URL to S3
+        String errMsg;
         String file_path = saveFileFromWeb(m);
-        String resultPath = String.format("%s_result", messageId);
+        if(file_path == null){
+            errMsg = "Input link is broken!";
+            System.out.println(errMsg);
+            return errMsg;
+        }
+
+        String resultPath = String.format("%s_result.txt", messageId);
         File resultFile = new File(resultPath);
         if(!resultFile.createNewFile()){
-            String errMsg = String.format("File named %s already exists", resultFile);
+            errMsg = String.format("File named %s already exists", resultFile);
             System.out.println(errMsg);
             return errMsg;
         }
         System.out.printf("Processing the message into file: %s\n", resultPath);
         String result = StanfordParser.parse(file_path, resultPath, m.job);
         System.out.println("Processing Finished!");
-        String ObjectKey = String.format("%s/%s", m.container, messageId);
+        String ObjectKey = String.format("%s/%s.txt", m.container, messageId);
         if(result.equals("1"))
             return S3Helper.putS3Object(Worker.bucketName, ObjectKey, resultPath);
         else
@@ -173,25 +171,28 @@ public class Worker {
 
     private static String saveFileFromWeb(Msg m) throws IOException {
         // Gets the text from the url and save into messageId.txt
+        try {
+            URL url = new URL(m.inputLink);
+            BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(url.openStream()));
 
-        URL url = new URL(m.inputLink);
-        BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(url.openStream()));
+            StringBuilder stringBuilder = new StringBuilder();
 
-        StringBuilder stringBuilder = new StringBuilder();
+            String inputLine;
+            while ((inputLine = bufferedReader.readLine()) != null) {
+                stringBuilder.append(inputLine);
+                stringBuilder.append(System.lineSeparator());
+            }
 
-        String inputLine;
-        while ((inputLine = bufferedReader.readLine()) != null)
-        {
-            stringBuilder.append(inputLine);
-            stringBuilder.append(System.lineSeparator());
+            bufferedReader.close();
+            String savedPath = String.format("%s.txt", messageId);
+            try (PrintWriter out = new PrintWriter(savedPath)) {
+                out.println(stringBuilder.toString());
+            }
+            return savedPath;
         }
-
-        bufferedReader.close();
-        String savedPath = String.format("%s.txt", messageId);
-        try (PrintWriter out = new PrintWriter(savedPath)) {
-            out.println(stringBuilder.toString());
+        catch (Exception e) {
+            return null;
         }
-        return savedPath;
     }
 }

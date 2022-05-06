@@ -36,7 +36,7 @@ public class HTMLCreator {
     private static String getAllEntries(LocalApplication.ResultEntry[] results) {
         StringBuilder sb = new StringBuilder();
         for(LocalApplication.ResultEntry result : results){
-            if(!result.hasFailed) {
+            if(result.outputLink.startsWith("https://")) {
                 sb.append(String.format("<body style=\"font-size:150%%;\"> %s: \n" +
                         "<a href=\"%s\">intput</a>\n" +
                         "<a href=\"%s\">output</a>\n" +
