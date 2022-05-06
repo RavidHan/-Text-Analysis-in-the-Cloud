@@ -9,7 +9,7 @@ import java.util.Base64;
 
 
 public class ManagerCreator {
-    public static String credentialsPath = "C:\\Users\\diaml\\.aws\\credentials";
+    public static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
 
     public static void main(String[] args) throws InterruptedException, IOException {
     }
@@ -109,7 +109,7 @@ public class ManagerCreator {
                 .userData(getECuserData(bucketName))
                 .maxCount(1)
                 .minCount(1)
-                .securityGroups("launch-wizard-2")
+                .securityGroups("launch-wizard-1")
                 .build();
 
         RunInstancesResponse response = ec2.runInstances(runRequest);
