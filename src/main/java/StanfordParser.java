@@ -37,6 +37,7 @@ public class StanfordParser {
                 TreePrint tp = new TreePrint(jobType);
                 tp.printTree(parse, pw);
             }
+            fstream.close();
             return "1";
         }
         catch(Exception e){
