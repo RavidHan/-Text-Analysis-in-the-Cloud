@@ -5,7 +5,7 @@ import java.io.*;
 import java.util.List;
 
 public class StanfordParser {
-    public static String parse(String inputPath, String outputPath, ParsingJob job) throws IOException {
+    public static String parse(String inputPath, String outputPath, String job) throws IOException {
         try {
             LexicalizedParser p = LexicalizedParser.loadModel("englishPCFG.ser.gz");
             FileInputStream fstream = new FileInputStream(inputPath);
@@ -17,11 +17,11 @@ public class StanfordParser {
             PrintWriter pw = new PrintWriter(outputPath);
             String jobType = "";
 
-            if (job == ParsingJob.POS) {
+            if (job.equals("POS")) {
                 jobType = "wordsAndTags";
-            } else if (job == ParsingJob.DEPENDENCY) {
+            } else if (job.equals("DEPENDENCY")) {
                 jobType = "typedDependencies";
-            } else if (job == ParsingJob.CONSTITUENCY) {
+            } else if (job.equals("CONSTITUENCY")) {
                 jobType = "penn";
             }
 
