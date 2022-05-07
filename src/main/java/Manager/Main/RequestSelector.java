@@ -6,9 +6,19 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class RequestSelector {
     private LinkedBlockingQueue<Request> allRequestsQueue;
+    private boolean closed;
 
     public RequestSelector(){
         this.allRequestsQueue = new LinkedBlockingQueue<>();
+        this.closed = false;
+    }
+
+    public boolean isClosed(){
+        return this.closed;
+    }
+
+    public void close(){
+        this.closed = true;
     }
 
     public boolean isEmpty(){
@@ -20,7 +30,7 @@ public class RequestSelector {
     }
 
     public void putMessage(Request request){
-        while (true) {
+        while (!this.isClosed()) {
             try {
                 this.allRequestsQueue.put(request);
                 break;

@@ -76,12 +76,8 @@ public class ManagerMain {
 
         try {
             managerThread.join();
-            appConnectionThread.interrupt();
-            workerConnectionThread.interrupt();
             appConnectionThread.join();
             workerConnectionThread.join();
-            appSQSConnectionHandler.terminate();
-            workerSQSConnectionHandler.terminate();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {

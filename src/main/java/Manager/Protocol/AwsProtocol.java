@@ -35,7 +35,7 @@ public class AwsProtocol extends Protocol<Request>{
     @Override
     public Runnable process(Request req) throws RequestUnknownException, NotifyFinishedException {
         if (req instanceof AppToManagerRequest){
-            if (((AppToManagerRequest) req).isTermination()){
+            if (((AppToManagerRequest) req).isTermination() || shouldTerminate){
                 shouldTerminate = true;
                 throw new NotifyFinishedException();
             }
@@ -44,12 +44,12 @@ public class AwsProtocol extends Protocol<Request>{
         if (req instanceof WorkerToManagerRequest){
             return this.processWorkerRequest((WorkerToManagerRequest) req);
         }
-
         throw new RequestUnknownException();
     }
 
     private Runnable processWorkerRequest(WorkerToManagerRequest req) {
         return () -> {
+            System.out.println("Processing a worker request");
             String appMessageId = req.getData()[0];
             if (appMessagesLocksMap.containsKey(appMessageId)){
                 Lock currLock = appMessagesLocksMap.get(appMessageId);
@@ -63,6 +63,7 @@ public class AwsProtocol extends Protocol<Request>{
                         } catch (RequestUnknownException e) {
                             e.printStackTrace();
                         }
+                        System.out.println("Finished working on application message: " + appMessageId);
                         appMessagesLocksMap.remove(appMessageId);
                     } else {
                         currLock.unlock();
@@ -75,6 +76,7 @@ public class AwsProtocol extends Protocol<Request>{
     private Runnable processApplicationRequest(AppToManagerRequest req) {
         return () -> {
             try {
+                System.out.println("Processing an application request");
                 List<ManagerToWorkerRequest> managerToWorkerRequests = new LinkedList<>();
                 JsonArrayBuilder dataArray = Json.createArrayBuilder();
 
@@ -82,6 +84,8 @@ public class AwsProtocol extends Protocol<Request>{
                 InputStream inputStream = dataStorage.getFile(req.getData());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
+                long startTime = System.currentTimeMillis();
+                int sentMsgNum = 0;
                 while ((line = reader.readLine()) != null) {
                     String[] strings = line.split("\t");
                     if (strings.length == 2) {
@@ -89,26 +93,29 @@ public class AwsProtocol extends Protocol<Request>{
                         managerToWorkerRequest.setData(new AbstractMap.SimpleEntry<>(strings[0], strings[1]));
                         managerToWorkerRequest.setAppMessageId(req.getId());
                         managerToWorkerRequests.add(managerToWorkerRequest);
-                        System.out.println("added request");
                         String messageId = this.workersConnection.sendMessage(managerToWorkerRequest);
-                        System.out.println("send message to worker");
+                        sentMsgNum++;
                         dataArray.add(Json.createObjectBuilder()
                                         .add("output", "")
                                         .add("analysisType", managerToWorkerRequest.getData().getKey().toString())
                                         .add("inputLink", managerToWorkerRequest.getData().getValue())
                                         .build());
-                        System.out.println("added message to json");
                     }
                 }
-                System.out.println("finished breakimg txt file");
                 JsonObjectBuilder s3LibData = Json.createObjectBuilder().add("files", dataArray.build());
                 this.dataStorage.createLibInfoFile(req.getId(), s3LibData.build());
                 appMessagesLocksMap.put(req.getId(), new ReentrantLock());
                 reader.close();
+                long messageDelay = sentMsgNum*150 - (System.currentTimeMillis()-startTime);
+                if (messageDelay > 0) {
+                    Thread.sleep(messageDelay);
+                }
                 jobExecutor.createWorkers();
             } catch (MalformedURLException e) {
                 System.err.println("Malformed URL: " + e.getMessage());
             } catch (IOException | RequestUnknownException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         };

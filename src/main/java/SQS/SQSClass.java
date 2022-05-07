@@ -1,5 +1,6 @@
 package SQS;
 
+import com.google.protobuf.MapEntry;
 import software.amazon.awssdk.core.exception.AbortedException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -7,6 +8,7 @@ import software.amazon.awssdk.services.sqs.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SQSClass {
 
@@ -124,7 +126,6 @@ public class SQSClass {
     }
 
     public static String sendMessageFromString(SqsClient sqsClient, String queueUrl, String messageString) {
-
             SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                     .queueUrl(queueUrl)
                     .messageBody(messageString).build();
@@ -283,8 +284,8 @@ public class SQSClass {
         GetQueueAttributesResponse response = sqsClient.getQueueAttributes(attributesRequest);
 
         int requestsNum = 0;
-        for (String attr : response.attributes().values()){
-             requestsNum+=Integer.parseInt(attr);
+        for (Map.Entry attr : response.attributesAsStrings().entrySet()){
+             requestsNum+=Integer.parseInt(attr.getValue().toString());
         }
 
         return requestsNum;

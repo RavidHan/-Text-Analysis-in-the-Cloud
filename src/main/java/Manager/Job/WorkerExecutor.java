@@ -135,19 +135,25 @@ public class WorkerExecutor implements JobExecutor {
     @Override
     public void deleteJobExecutor(String id) {
         StopInstancesRequest runRequest = StopInstancesRequest.builder().instanceIds(id).build();
-
         this.ec2.stopInstances(runRequest);
     }
 
     @Override
     public synchronized void createWorkers() {
         int currWorkers = this.getNumberOfWorkers();
-        int workersNeeded = (SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) / this.messagesPerWorker)+1;
+        float workersNeeded = SQSClass.getNumberOfMessagesInQueue(sqsClient, inputSQS) / this.messagesPerWorker;
         if (currWorkers < workersNeeded){
             for (int i = currWorkers; i < workersNeeded && i <= 19; i++){
                 this.createJobExecutor();
             }
 
+        }
+        while (this.getNumberOfWorkers() < workersNeeded){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -157,10 +163,6 @@ public class WorkerExecutor implements JobExecutor {
             String nextToken = null;
 
             do {
-//                Filter filter = Filter.builder()
-//                        .values("running")
-//                        .build();
-
                 DescribeInstancesRequest request = DescribeInstancesRequest.builder()
                         .build();
 
@@ -181,10 +183,12 @@ public class WorkerExecutor implements JobExecutor {
         } catch (Ec2Exception e) {
             System.err.println(e.awsErrorDetails().errorMessage());
         }
+
+        System.out.println("Deleted all job executors.");
     }
 
     private String getCredentials() throws IOException {
-        String credentialPath = "/home/ec2-user/.aws/credentials";
+        String credentialPath = "C:\\Users\\97254\\.aws\\credentials";
         BufferedReader br = new BufferedReader(new FileReader(credentialPath));
         try {
             StringBuilder sb = new StringBuilder();

@@ -40,6 +40,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
     public String sendMessage(Request request) throws RequestUnknownException {
             try {
                 String message = this.encoderDecoder.encode(request);
+                System.out.println("Sending message to SQS: " + this.sendMessageUrl);
                 return SQSClass.sendMessageFromString(this.sqsClient, this.sendMessageUrl, message);
             } catch (RequestUnknownException | Exception e){
                 e.printStackTrace();
@@ -50,7 +51,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
     @Override
     public void listener() {
             while (true) {
-                if (Thread.interrupted()){
+                if (Thread.interrupted() || this.requestSelector.isClosed()){
                     this.terminate();
                     return;
                 }
@@ -68,6 +69,7 @@ public class SQSConnectionHandler extends ConnectionHandler {
                     continue;
                 }
                 if (req != null) {
+                    System.out.println("Getting message from SQS: " + this.getMessageUrl);
                     SQSClass.deleteMessages(this.sqsClient, this.getMessageUrl, appMessages);
                     this.requestSelector.putMessage(req);
                 }

@@ -28,8 +28,8 @@ public class Manager implements Runnable{
     }
 
     public void run(){
-        Boolean finished = false;
-        while (true) {
+        boolean finished = false;
+        while (!this.requestSelector.isClosed()) {
             Request request = requestSelector.getRequest();
             Protocol protocol = protocolFactory.get();
             try {
@@ -40,9 +40,12 @@ public class Manager implements Runnable{
                 e.printStackTrace();
                 continue;
             } catch (NotifyFinishedException e) {
+                System.out.println("Got a termination message from a client!");
                 finished = true;
             }
             if (finished && protocol.shouldTerminate()) {
+                System.out.println("Finished processing all the requests and starting the exit sequence of the program.");
+                this.requestSelector.close();
                 break;
             }
         }
