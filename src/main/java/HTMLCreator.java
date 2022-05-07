@@ -4,15 +4,10 @@ import java.io.PrintWriter;
 
 public class HTMLCreator {
     public static void main(String[] args) throws IOException {
-        LocalApplication.ResultEntry entry = new LocalApplication.ResultEntry("POS", "https://www.youtube.com", "output1", false);
-        LocalApplication.ResultEntry entry1 = new LocalApplication.ResultEntry("DEP", "https://www.youtube.com", "output2", false);
-        LocalApplication.ResultEntry entry2 = new LocalApplication.ResultEntry("JOBTYPE3", "https://www.youtube.com", "output4", false);
-        LocalApplication.ResultEntry entry3 = new LocalApplication.ResultEntry("JOBTYPE4", "https://www.youtube.com", "Error: Worker failed due to an issue", true);
-        LocalApplication.ResultEntry[] res = new LocalApplication.ResultEntry[]{entry, entry1, entry2, entry3};
-        createHTML(res, "ID123712899");
+
     }
 
-    public static void createHTML(LocalApplication.ResultEntry[] results, String msgID) throws IOException {
+    public static void createHTML(LocalApplication.ResultEntry[] results, String msgID, String outputFile) throws IOException {
         String bodies = getAllEntries(results);
         String finalResult = String.format("<html>\n" +
                 "<head>\n" +
@@ -21,7 +16,7 @@ public class HTMLCreator {
                 "</head>\n" +
                 "%s\n" +
                 "</html>", msgID, bodies);
-        File newHtmlFile = new File("resultHTML.html");
+        File newHtmlFile = new File(outputFile);
         if(!newHtmlFile.createNewFile()) {
             newHtmlFile.delete();
             newHtmlFile.createNewFile();
