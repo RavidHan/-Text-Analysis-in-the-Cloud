@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 public class LocalApplication {
     static String managerName = "Manager_EC2";
     static String bucketName = "";
+    static int n;
+    static String outputFile = "";
+    static boolean terminate = false;
 
     static class ResultEntry{
         public String job;
@@ -37,29 +40,29 @@ public class LocalApplication {
         }
     }
     public static void main(String[] args) throws InterruptedException, IOException {
-        System.out.printf("Note: The credentials are taken from %s, make sure it is the right path.\n", ManagerCreator.credentialsPath);
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(System.in));
-        System.out.print("Enter bucket name: ");
-        bucketName = reader.readLine();
-        String filePath = getFilePathOrTerminate(reader);
+        if(args.length < 3){
+            System.out.println("Make sure to pass InputFile OutputFile n [terminate]");
+            return;
+        }
+        String filePath = getFilePathOrTerminate(args[0]);
+        outputFile = args[1];
+        n = Integer.parseInt(args[2]);
+        if(args.length > 3 && args[3].equals("terminate"))
+            terminate = true;
+
+        getFilePathOrTerminate(ManagerCreator.credentialsPath);
+        bucketName = getInput("Enter bucket name: ");
         String fileKey = uploadFile(filePath, bucketName);
-
-
-        createManagerIfNeeded();
+        createManagerIfNeeded(n);
         SqsClient sqsClient = SqsClient.builder()
                 .region(Region.US_WEST_2)
                 .build();
-        System.out.println("Waiting for output SQS... This might take a while...");
+
         String outputURL = waitForQueue(sqsClient, "getAppMessagesSQS");
-        System.out.println("Output SQS is on!");
-        System.out.println("Waiting for input SQS...");
         String inputURL = waitForQueue(sqsClient, "sendAppMessagesSQS");
-        System.out.println("Input SQS is on!");
+
         System.out.printf("Sending %s to outputSQS\n%n", fileKey);
         String id = SQSClass.sendMessageFromString(sqsClient, outputURL, fileKey);
-        if(fileKey.equals("terminate"))
-            return;
 
         while(true) {
             List<Message> msgs = SQSClass.receiveMessages(sqsClient, inputURL);
@@ -68,8 +71,10 @@ public class LocalApplication {
                     String s = msg.body();
                     if (s.contains(id)) {
                         ResultEntry[] resultsArray = parseResults(id);
-                        HTMLCreator.createHTML(resultsArray, id);
+                        HTMLCreator.createHTML(resultsArray, id, outputFile);
                         SQSClass.deleteMessage(sqsClient, inputURL, msg);
+                        if(terminate)
+                            SQSClass.sendMessageFromString(sqsClient, outputURL, "terminate");
                         return;
                     }
                 }
@@ -78,16 +83,18 @@ public class LocalApplication {
 
     }
 
-    public static String getFilePathOrTerminate(BufferedReader reader) throws IOException {
-        String filePath = "";
-        boolean fileExists = false;
-        while(!fileExists) {
-            System.out.print("Enter path to input file (or 'terminate' to end the execution): ");
-            filePath = reader.readLine();
-            File f = new File(filePath);
-            fileExists = f.exists() || filePath.equals("terminate");
-            if(!fileExists)
-                System.out.println("File was not found!");
+    public static String getInput(String output) throws IOException {
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in));
+        System.out.print(output);
+        return reader.readLine();
+    }
+
+    public static String getFilePathOrTerminate(String filePath){
+        File f = new File(filePath);
+        if (!f.exists()) {
+            System.out.printf("%s was not found!\n", filePath);
+            System.exit(0);
         }
         return filePath;
     }
@@ -132,7 +139,7 @@ public class LocalApplication {
         return false;
     }
 
-    private static void createManagerIfNeeded() throws IOException {
+    private static void createManagerIfNeeded(int n) throws IOException {
         Ec2Client ec2 = Ec2Client.builder()
                 .region(Region.US_WEST_2)
                 .build();
@@ -141,26 +148,18 @@ public class LocalApplication {
             return;
         }
         System.out.println("Creating a Manager EC2 instance. This can take a while as we need to wait for the instance to start.");
-        System.out.print("Please enter n (messagesPerWorker): ");
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(System.in));
-        try{
-            int n = Integer.parseInt(reader.readLine());
-            ManagerCreator.createManagerInstance(managerName, bucketName, n);
-        }
-        catch (Exception e){
-            System.out.println("n must be an integer!");
-            System.exit(0);
-        }
-
+        ManagerCreator.createManagerInstance(managerName, bucketName, n);
     }
+
     private static String waitForQueue(SqsClient sqsClient, String queueName) throws InterruptedException {
         try {
+            System.out.printf("Waiting for %s... This might take a while...\n", queueName);
             String name = SQSClass.getQueueByName(sqsClient, queueName);
             while (name == null) {
                 TimeUnit.SECONDS.sleep(1);
                 name = SQSClass.getQueueByName(sqsClient, queueName);
             }
+            System.out.printf("%s is on!\n", queueName);
             return name;
         } catch (Exception e) {
             System.out.println(e.toString());
@@ -169,9 +168,6 @@ public class LocalApplication {
     }
 
     private static String uploadFile(String filePath, String bucketName){
-        if(filePath.equals("terminate"))
-            return filePath;
-
         // Split path either by '/' or by '\'
         String[] s = filePath.split("/|\\\\");
         String fileName = s[s.length - 1];
