@@ -9,7 +9,7 @@ import java.util.Base64;
 
 
 public class ManagerCreator {
-    public static String credentialsPath = "C:\\Users\\97254\\.aws\\credentials";
+    public static String credentialsPath = "credentials";
 
     public static void main(String[] args) throws InterruptedException, IOException {
     }

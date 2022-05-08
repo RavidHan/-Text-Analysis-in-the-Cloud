@@ -49,9 +49,8 @@ public class LocalApplication {
         n = Integer.parseInt(args[2]);
         if(args.length > 3 && args[3].equals("terminate"))
             terminate = true;
-
+        updateInfoFromConfig();
         getFilePathOrTerminate(ManagerCreator.credentialsPath);
-        bucketName = getInput("Enter bucket name: ");
         String fileKey = uploadFile(filePath, bucketName);
         createManagerIfNeeded(n);
         SqsClient sqsClient = SqsClient.builder()
@@ -81,6 +80,23 @@ public class LocalApplication {
             TimeUnit.SECONDS.sleep(1);
         }
 
+    }
+
+    public static void updateInfoFromConfig(){
+        try (BufferedReader br = new BufferedReader(new FileReader("config.txt"))) {
+            int line_counter = 0;
+            String line;
+            while ((line = br.readLine()) != null && line_counter < 2) {
+                if(line_counter == 0)
+                    ManagerCreator.credentialsPath = line;
+                if(line_counter == 1)
+                    bucketName = line;
+                line_counter++;
+            }
+        } catch (IOException e) {
+            System.out.println("Make sure you are using config.txt!");
+            System.exit(1);
+        }
     }
 
     public static String getInput(String output) throws IOException {
