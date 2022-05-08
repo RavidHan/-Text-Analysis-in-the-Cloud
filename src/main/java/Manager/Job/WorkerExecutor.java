@@ -56,7 +56,8 @@ public class WorkerExecutor implements JobExecutor {
         userData = userData + "cd -\n";
         userData = userData + "pwd\n";
         userData = userData + "cp -rf ~/.aws .\n";
-        userData = userData + "sudo yum install java-1.8.0-openjdk -y\n";
+        userData = userData + "wget https://download.oracle.com/java/18/latest/jdk-18_linux-x64_bin.rpm\n";
+        userData = userData + "sudo rpm -Uvh jdk-18_linux-x64_bin.rpm\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/-Text-Analysis-in-the-Cloud.jar Text-Analysis.jar\n";
         userData = userData + "sudo aws s3 cp s3://diamlior321/englishPCFG.ser.gz englishPCFG.ser.gz\n";
         userData = userData + String.format("sudo java -cp Text-Analysis.jar Worker %s %s %s\n", inputSQS, outputSQS, this.bucketName);
@@ -188,7 +189,7 @@ public class WorkerExecutor implements JobExecutor {
     }
 
     private String getCredentials() throws IOException {
-        String credentialPath = "C:\\Users\\97254\\.aws\\credentials";
+        String credentialPath = "/home/ec2-user/.aws/credentials";
         BufferedReader br = new BufferedReader(new FileReader(credentialPath));
         try {
             StringBuilder sb = new StringBuilder();

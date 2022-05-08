@@ -1,7 +1,7 @@
 How to run our application?
 
 Before running the application make sure you update the configuration file accordingly.
-The configuration file is named ***.
+The configuration file is named config.txt.
 In the first row enter the credentials path, and in the second row enter your bucket name.
 For the excecution run the following command from the jar's directory:
 java -jar Text-Analysis-in-the-Cloud.jar InputFile OutPutFile n [terminate]
@@ -58,7 +58,17 @@ Additional info:
 ami: ami-0b36cd6786bcfe120
 Instance type: T2_MICRO
 
-Performances:
-Total running time-
-The n we used-
+Performances -
+Total running time: 1054 seconds
+The n we used: 1
 
+
+Regarding security - the credentials are being read from the LocalApplication's .aws directory and insterted directly into the UserData when creating the manager.
+
+Regarding scalablity - the "heavy lifting" is done by the workers which are created by the manager according to the amount of job requests.
+The manager itself is built from 2 "listeners" threads that take care of the SQS communications. In addition the manager holds a thread pool which is responsible for handling the local application's requests and for updating the ID-INFO.json with the responses from the workers.
+The way that the manager was built allows it to be duplicated as many times as needed which helps to make the whole system more scalable.
+There is one downside in the way we built our system in regards to scalability - there is only a single SQS for all the LocalApplication's results, so they are all waiting on the same SQS.
+(If we had more time we would've changed this implementation to include a unique SQS for each application but we realized this scalibility issue only in the last day).
+
+Persistance - Each worker when it recieves a message, it changes its VisibilityTimeout to 30 minutes, so if it dies in the middle of the parsing, the message can be parsed later on by another worker. The manager makes sure after each request to open the right amount of workers needed according to the number of tasks in the SQS, meaning that even if a worker dies it will be replaced in the handling on the next request.
